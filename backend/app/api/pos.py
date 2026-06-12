@@ -1,15 +1,18 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from app.models.schemas import VentaPOSCreate, VentaPOSRead
 from app.core.database import supabase_client
+from app.core.security import requerir_roles
 
 router = APIRouter(
     prefix="/api/pos",
     tags=["Punto de Venta (POS)"]
 )
 
+SoloPersonalPOS = Depends(requerir_roles(["empleado", "administrador"]))
+
 @router.post("/", response_model=VentaPOSRead, status_code=status.HTTP_201_CREATED)
-async def registrar_venta_pos(venta: VentaPOSCreate):
+async def registrar_venta_pos(venta: VentaPOSCreate, usuario_actual: dict = SoloPersonalPOS):
     try:
         venta_data = venta.model_dump(mode='json')
         response_venta = supabase_client.table("ventas_pos").insert(venta_data).execute()
@@ -17,7 +20,6 @@ async def registrar_venta_pos(venta: VentaPOSCreate):
         if not response_venta.data:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error al procesar la venta.")
             
-        # Descontar el stock automáticamente
         producto_id = venta_data["producto_id"]
         cantidad_vendida = venta_data["cantidad"]
         
@@ -31,7 +33,7 @@ async def registrar_venta_pos(venta: VentaPOSCreate):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.get("/", response_model=List[VentaPOSRead])
-async def historial_ventas_pos():
+async def historial_ventas_pos(usuario_actual: dict = SoloPersonalPOS):
     try:
         response = supabase_client.table("ventas_pos").select("*").execute()
         return response.data

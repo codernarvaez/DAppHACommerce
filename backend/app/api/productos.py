@@ -1,15 +1,19 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from app.models.schemas import ProductoCreate, ProductoRead
 from app.core.database import supabase_client
+from app.core.security import requerir_roles
 
 router = APIRouter(
     prefix="/api/productos",
     tags=["Productos y Catálogo"]
 )
 
+SoloProductores = Depends(requerir_roles(["productor", "administrador"]))
+
 @router.post("/", response_model=ProductoRead, status_code=status.HTTP_201_CREATED)
-async def registrar_producto(producto: ProductoCreate):
+async def registrar_producto(producto: ProductoCreate, usuario_actual: dict = SoloProductores):
+
     try:
         producto_data = producto.model_dump(mode='json')
         response = supabase_client.table("productos").insert(producto_data).execute()
@@ -22,6 +26,7 @@ async def registrar_producto(producto: ProductoCreate):
 
 @router.get("/", response_model=List[ProductoRead])
 async def listar_productos():
+
     try:
         response = supabase_client.table("productos").select("*").execute()
         return response.data
@@ -30,6 +35,7 @@ async def listar_productos():
 
 @router.get("/{producto_id}", response_model=ProductoRead)
 async def obtener_producto(producto_id: str):
+
     try:
         response = supabase_client.table("productos").select("*").eq("id", producto_id).execute()
         if not response.data:
@@ -39,8 +45,7 @@ async def obtener_producto(producto_id: str):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.patch("/{producto_id}", response_model=ProductoRead)
-async def actualizar_estado_producto(producto_id: str, estado: str):
-    """Actualiza rápidamente el estado de un producto (ej. de 'borrador' a 'publicado' o 'agotado')."""
+async def actualizar_estado_producto(producto_id: str, estado: str, usuario_actual: dict = SoloProductores):
     try:
         response = supabase_client.table("productos").update({"estado": estado}).eq("id", producto_id).execute()
         if not response.data:

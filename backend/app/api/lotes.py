@@ -1,16 +1,22 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-from app.models.schemas import LoteCreate, LoteRead, LoteUpdate # Asumiendo que agregaste LoteUpdate
+from app.models.schemas import LoteCreate, LoteRead, LoteUpdate 
 from app.core.utils import generar_hash_lote
 from app.core.database import supabase_client
+from app.core.security import obtener_usuario_actual, requerir_roles
 
 router = APIRouter(
     prefix="/api/lotes",
     tags=["Lotes y Trazabilidad"]
 )
 
+
+UsuarioAutenticado = Depends(obtener_usuario_actual)
+SoloProductores = Depends(requerir_roles(["productor", "administrador"]))
+
+
 @router.post("/", response_model=LoteRead, status_code=status.HTTP_201_CREATED)
-async def registrar_lote(lote: LoteCreate):
+async def registrar_lote(lote: LoteCreate, usuario_actual: dict = SoloProductores):
     try:
         lote_data = lote.model_dump(mode='json')
         lote_hash = generar_hash_lote(lote_data)
@@ -26,19 +32,17 @@ async def registrar_lote(lote: LoteCreate):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-
 @router.get("/", response_model=List[LoteRead])
-async def listar_lotes():
-    """Obtiene todos los lotes registrados en el sistema."""
+async def listar_lotes(usuario_actual: dict = UsuarioAutenticado):
     try:
         response = supabase_client.table("lotes").select("*").execute()
         return response.data
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
 @router.get("/{lote_id}", response_model=LoteRead)
-async def obtener_lote(lote_id: str):
-    """Busca un lote específico por su ID."""
+async def obtener_lote(lote_id: str, usuario_actual: dict = UsuarioAutenticado):
     try:
         response = supabase_client.table("lotes").select("*").eq("id", lote_id).execute()
         
@@ -51,12 +55,8 @@ async def obtener_lote(lote_id: str):
 
 
 @router.patch("/{lote_id}", response_model=LoteRead)
-async def actualizar_lote(lote_id: str, lote_actualizado: LoteUpdate):
-    """
-    Actualiza campos específicos de un lote (ej. cambiar el estado a 'verificado').
-    """
+async def actualizar_lote(lote_id: str, lote_actualizado: LoteUpdate, usuario_actual: dict = SoloProductores):
     try:
-        # exclude_unset=True evita que se envíen valores nulos si el usuario no los mandó
         update_data = lote_actualizado.model_dump(exclude_unset=True, mode='json')
         
         if not update_data:
