@@ -1,25 +1,30 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from app.api import lotes, productos, pos, subastas, usuarios
 
+app = FastAPI(
+    title="API DAppHACommerce / STGC",
+    description="Backend principal con trazabilidad y gestión.",
+    version="1.0.0"
+)
 
-class Item(BaseModel):
-    name: str
-    price: float
-    is_offer: bool | None = None
+# Configuración básica de CORS (Cors ajustado para desarrollo, revisar en producción)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Registrar todas las rutas
+app.include_router(lotes.router)
+app.include_router(productos.router)
+app.include_router(pos.router)
+app.include_router(subastas.router)
+app.include_router(usuarios.router)
 
-@app.get("/")
+@app.get("/", tags=["Health Check"])
 def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
-
-
-@app.put("/items/{item_id}")
-def update_item(item_id: int, item: Item):
-    return {"item_name": item.name, "item_id": item_id}
+    return {"status": "ok", "message": "API Backend operando correctamente"}

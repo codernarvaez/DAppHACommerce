@@ -1,0 +1,38 @@
+from fastapi import APIRouter, HTTPException, status
+from app.models.schemas import SubastaCreate, SubastaRead, OfertaCreate, OfertaRead
+from app.core.database import supabase_client
+
+router = APIRouter(
+    prefix="/api/subastas",
+    tags=["Subastas Web3"]
+)
+
+@router.post("/", response_model=SubastaRead, status_code=status.HTTP_201_CREATED)
+async def crear_subasta(subasta: SubastaCreate):
+    try:
+        subasta_data = subasta.model_dump(mode='json')
+        response = supabase_client.table("subastas").insert(subasta_data).execute()
+
+        if not response.data:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error al crear la subasta.")
+        return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.post("/{subasta_id}/ofertas", response_model=OfertaRead, status_code=status.HTTP_201_CREATED)
+async def registrar_oferta(subasta_id: str, oferta: OfertaCreate):
+    try:
+        oferta_data = oferta.model_dump(mode='json')
+        # Forzar el ID de la URL por seguridad
+        oferta_data["subasta_id"] = subasta_id 
+        
+        response = supabase_client.table("ofertas").insert(oferta_data).execute()
+        
+        if response.data:
+            # Actualizar el precio_actual de la subasta automáticamente
+            nuevo_precio = oferta_data["monto"]
+            supabase_client.table("subastas").update({"precio_actual": nuevo_precio}).eq("id", subasta_id).execute()
+            
+        return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
