@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from typing import List
 from app.models.schemas import SubastaCreate, SubastaRead, OfertaCreate, OfertaRead
 from app.core.database import supabase_client
 
@@ -19,20 +20,35 @@ async def crear_subasta(subasta: SubastaCreate):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+@router.get("/", response_model=List[SubastaRead])
+async def listar_subastas():
+    try:
+        response = supabase_client.table("subastas").select("*").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 @router.post("/{subasta_id}/ofertas", response_model=OfertaRead, status_code=status.HTTP_201_CREATED)
 async def registrar_oferta(subasta_id: str, oferta: OfertaCreate):
     try:
         oferta_data = oferta.model_dump(mode='json')
-        # Forzar el ID de la URL por seguridad
         oferta_data["subasta_id"] = subasta_id 
         
         response = supabase_client.table("ofertas").insert(oferta_data).execute()
         
         if response.data:
-            # Actualizar el precio_actual de la subasta automáticamente
+            # Actualizar el precio_actual de la subasta con la nueva oferta
             nuevo_precio = oferta_data["monto"]
             supabase_client.table("subastas").update({"precio_actual": nuevo_precio}).eq("id", subasta_id).execute()
             
         return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.get("/{subasta_id}/ofertas", response_model=List[OfertaRead])
+async def listar_ofertas_subasta(subasta_id: str):
+    try:
+        response = supabase_client.table("ofertas").select("*").eq("subasta_id", subasta_id).execute()
+        return response.data
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
