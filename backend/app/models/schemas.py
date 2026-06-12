@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class RolUsuario(str, Enum):
@@ -41,10 +41,28 @@ class EstadoOrden(str, Enum):
     completada = "completada"
 
 
+class CuentaBase(BaseModel):
+    email: EmailStr = Field(description="Correo electrónico único del usuario")
+    clave: str = Field(min_length=8, max_length=255,
+                       description="Contraseña encriptada")
+
+
+class CuentaCreate(CuentaBase):
+    pass
+
+
+class CuentaRead(CuentaBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    created_at: datetime
+
+
 class UsuarioBase(BaseModel):
-    email: str = Field(min_length=5, max_length=254)
-    nombre_completo: str = Field(min_length=2, max_length=200)
-    rol: RolUsuario
+    cuenta_id: UUID = Field(description="Referencia a la cuenta del usuario")
+    nombre_completo: str = Field(
+        min_length=2, max_length=200, description="Nombre completo")
+    rol: RolUsuario = Field(description="Rol del usuario en el sistema")
 
 
 class UsuarioCreate(UsuarioBase):
@@ -59,12 +77,15 @@ class UsuarioRead(UsuarioBase):
 
 
 class ProductorBase(BaseModel):
-    usuario_id: UUID
-    nombre_finca: str = Field(min_length=2, max_length=200)
-    region: str = Field(min_length=2, max_length=120)
-    altitud_msnm: Decimal = Field(ge=0)
-    certificaciones: str = Field(default="")
-    wallet_address: str = Field(min_length=20, max_length=64)
+    usuario_id: UUID = Field(description="Referencia al usuario productor")
+    nombre_finca: str = Field(
+        min_length=2, max_length=200, description="Nombre de la finca")
+    region: str = Field(min_length=2, max_length=120,
+                        description="Región de ubicación")
+    altitud_msnm: int = Field(
+        ge=0, description="Altitud en metros sobre el nivel del mar")
+    certificaciones: str = Field(
+        default="", description="Certificaciones de la finca")
 
 
 class ProductorCreate(ProductorBase):
@@ -79,16 +100,18 @@ class ProductorRead(ProductorBase):
 
 
 class LoteBase(BaseModel):
-    productor_id: UUID
-    codigo_lote: str = Field(min_length=2, max_length=80)
-    variedad: str = Field(min_length=2, max_length=120)
-    fecha_cosecha: date
-    peso_kg: Decimal = Field(gt=0)
-    proceso: str = Field(min_length=2, max_length=120)
-    origen_geo: str = Field(min_length=2, max_length=255)
-    sha256_hash: str = Field(min_length=64, max_length=64)
-    polygon_tx_hash: str = Field(default="")
-    estado: EstadoLote
+    productor_id: UUID = Field(description="Referencia al productor")
+    codigo_lote: str = Field(min_length=2, max_length=80,
+                             description="Código único del lote")
+    variedad: str = Field(min_length=2, max_length=120,
+                          description="Variedad del producto")
+    fecha_cosecha: date = Field(description="Fecha de cosecha")
+    peso_kg: Decimal = Field(gt=0, description="Peso total en kilogramos")
+    proceso: str = Field(min_length=2, max_length=120,
+                         description="Proceso de tratamiento")
+    origen_geo: str = Field(min_length=2, max_length=255,
+                            description="Origen geográfico")
+    estado: EstadoLote = Field(description="Estado actual del lote")
 
 
 class LoteCreate(LoteBase):
@@ -103,12 +126,14 @@ class LoteRead(LoteBase):
 
 
 class ProductoBase(BaseModel):
-    lote_id: UUID
-    nombre: str = Field(min_length=2, max_length=200)
-    descripcion: str = Field(default="")
-    precio_base: Decimal = Field(gt=0)
-    stock_disponible: int = Field(ge=0)
-    estado: EstadoProducto
+    lote_id: UUID = Field(description="Referencia al lote")
+    nombre: str = Field(min_length=2, max_length=200,
+                        description="Nombre del producto")
+    descripcion: str = Field(default="", description="Descripción detallada")
+    precio_base: Decimal = Field(gt=0, description="Precio base del producto")
+    stock_disponible: int = Field(
+        ge=0, description="Cantidad disponible en stock")
+    estado: EstadoProducto = Field(description="Estado actual del producto")
 
 
 class ProductoCreate(ProductoBase):
@@ -123,14 +148,14 @@ class ProductoRead(ProductoBase):
 
 
 class SubastaBase(BaseModel):
-    producto_id: UUID
-    productor_id: UUID
-    precio_inicial: Decimal = Field(gt=0)
-    precio_actual: Decimal = Field(gt=0)
-    fecha_inicio: datetime
-    fecha_fin: datetime
-    estado: EstadoSubasta
-    contrato_address: str = Field(min_length=20, max_length=64)
+    producto_id: UUID = Field(description="Referencia al producto")
+    productor_id: UUID = Field(description="Referencia al productor")
+    precio_inicial: Decimal = Field(
+        gt=0, description="Precio inicial de la subasta")
+    precio_actual: Decimal = Field(gt=0, description="Precio actual más alto")
+    fecha_inicio: datetime = Field(description="Fecha y hora de inicio")
+    fecha_fin: datetime = Field(description="Fecha y hora de finalización")
+    estado: EstadoSubasta = Field(description="Estado actual de la subasta")
 
 
 class SubastaCreate(SubastaBase):
@@ -145,10 +170,9 @@ class SubastaRead(SubastaBase):
 
 
 class OfertaBase(BaseModel):
-    subasta_id: UUID
-    comprador_id: UUID
-    monto: Decimal = Field(gt=0)
-    tx_hash: str = Field(min_length=1, max_length=128)
+    subasta_id: UUID = Field(description="Referencia a la subasta")
+    comprador_id: UUID = Field(description="Referencia al comprador")
+    monto: Decimal = Field(gt=0, description="Monto ofrecido")
 
 
 class OfertaCreate(OfertaBase):
@@ -163,13 +187,14 @@ class OfertaRead(OfertaBase):
 
 
 class OrdenBase(BaseModel):
-    comprador_id: UUID
-    producto_id: UUID
-    subasta_id: UUID | None = None
-    total: Decimal = Field(gt=0)
-    estado: EstadoOrden
-    metodo_pago: str = Field(min_length=2, max_length=80)
-    tx_hash: str = Field(default="")
+    comprador_id: UUID = Field(description="Referencia al comprador")
+    producto_id: UUID = Field(description="Referencia al producto")
+    subasta_id: UUID | None = Field(
+        default=None, description="Referencia a subasta si aplica")
+    total: Decimal = Field(gt=0, description="Monto total de la orden")
+    estado: EstadoOrden = Field(description="Estado actual de la orden")
+    metodo_pago: str = Field(min_length=2, max_length=80,
+                             description="Método de pago utilizado")
 
 
 class OrdenCreate(OrdenBase):
@@ -184,9 +209,9 @@ class OrdenRead(OrdenBase):
 
 
 class QRTokensBase(BaseModel):
-    lote_id: UUID
-    token_hash: str = Field(min_length=1, max_length=128)
-    url_publica: str = Field(min_length=1, max_length=255)
+    lote_id: UUID = Field(description="Referencia al lote")
+    url_publica: str = Field(min_length=1, max_length=255,
+                             description="URL pública del QR")
 
 
 class QRTokensCreate(QRTokensBase):
