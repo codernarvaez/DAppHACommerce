@@ -1,0 +1,274 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+  enable_experimental_decimal = true
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- ENUMS ---
+enum RolUsuario {
+  comprador
+  productor
+  administrador
+  empleado
+}
+
+enum EstadoLote {
+  registrado
+  verificado
+  publicado
+}
+
+enum EstadoProducto {
+  borrador
+  publicado
+  agotado
+  inactivo
+}
+
+enum EstadoSubasta {
+  programada
+  activa
+  finalizada
+  cancelada
+}
+
+enum EstadoOrden {
+  pendiente
+  pagada
+  cancelada
+  completada
+}
+
+// --- TABLAS DE IDENTIDAD Y PERFILES ---
+
+model Cuenta {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String   @unique @db.VarChar(255)
+  clave      String   @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  usuarios Usuario[]
+
+  @@map("cuentas")
+}
+
+model Usuario {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cuenta_id      String     @db.Uuid
+  nombres        String     @db.VarChar(100)
+  apellidos      String     @db.VarChar(100)
+  rol            RolUsuario
+  telefono       String     @db.VarChar(20)
+  wallet_address String?    @db.VarChar(255)
+  created_at     DateTime   @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  cuenta      Cuenta      @relation(fields: [cuenta_id], references: [id], onDelete: Cascade)
+  productores Productor[]
+  empleados   Empleado[]
+  ofertas     Oferta[]
+  ordenes     Orden[]
+
+  @@map("usuarios")
+}
+
+model Productor {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String   @db.Uuid
+  nombre_finca    String   @db.VarChar(200)
+  region          String   @db.VarChar(120)
+  altitud_msnm    Int
+  certificaciones String?  @default("")
+  created_at      DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  usuario  Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  lotes    Lote[]
+  subastas Subasta[]
+
+  @@map("productores")
+}
+
+model Empleado {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String   @db.Uuid
+  cargo      String   @db.VarChar(100)
+  turno      String   @default("mañana") @db.VarChar(50)
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  usuario Usuario    @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  ventas  VentaPOS[]
+
+  @@map("empleados")
+}
+
+// --- TABLAS DE INVENTARIO Y TRAZABILIDAD ---
+
+model Lote {
+  id                      String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productor_id            String     @db.Uuid
+  codigo_lote             String     @unique @db.VarChar(80)
+  variedad                String     @db.VarChar(120)
+  fecha_cosecha           DateTime   @db.Date
+  peso_kg                 Decimal    @db.Decimal(10, 2)
+  proceso                 String     @db.VarChar(120)
+  origen_geo              String     @db.VarChar(255)
+  estado                  EstadoLote @default(registrado)
+  id_trazabilidad_externa String     @default("")
+  datos_trazabilidad      Json       @default("{}")
+  tx_hash                 String?    @db.VarChar(255)
+  created_at              DateTime   @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  productor Productor            @relation(fields: [productor_id], references: [id], onDelete: Cascade)
+  eventos   EventoTrazabilidad[]
+  productos Producto[]
+  qr_tokens QRToken[]
+
+  @@map("lotes")
+}
+
+model EventoTrazabilidad {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lote_id       String   @db.Uuid
+  nombre_evento String   @db.VarChar(150)
+  fecha_evento  DateTime @db.Timestamptz()
+  responsable   String   @db.VarChar(150)
+  detalles      Json     @default("{}")
+  created_at    DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  lote Lote @relation(fields: [lote_id], references: [id], onDelete: Cascade)
+
+  @@map("eventos_trazabilidad")
+}
+
+model Producto {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lote_id          String         @db.Uuid
+  nombre           String         @db.VarChar(200)
+  descripcion      String?        @default("")
+  categoria        String         @db.VarChar(100)
+  imagenes         String[]       // Array de Strings (nativo en PostgreSQL)
+  precio_base      Decimal        @db.Decimal(12, 2)
+  stock_disponible Int
+  estado           EstadoProducto @default(borrador)
+  created_at       DateTime       @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  lote     Lote       @relation(fields: [lote_id], references: [id], onDelete: Cascade)
+  subastas Subasta[]
+  ordenes  Orden[]
+  ventas   VentaPOS[]
+
+  @@map("productos")
+}
+
+// --- E-COMMERCE, SUBASTAS Y PUNTO DE VENTA (POS) ---
+
+model Subasta {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  producto_id    String        @db.Uuid
+  productor_id   String        @db.Uuid
+  precio_inicial Decimal       @db.Decimal(12, 2)
+  precio_actual  Decimal       @db.Decimal(12, 2)
+  fecha_inicio   DateTime      @db.Timestamptz()
+  fecha_fin      DateTime      @db.Timestamptz()
+  estado         EstadoSubasta @default(programada)
+  created_at     DateTime      @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  producto  Producto  @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  productor Productor @relation(fields: [productor_id], references: [id], onDelete: Cascade)
+  ofertas   Oferta[]
+  ordenes   Orden[]
+
+  @@map("subastas")
+}
+
+model Oferta {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subasta_id   String   @db.Uuid
+  comprador_id String   @db.Uuid
+  monto        Decimal  @db.Decimal(12, 2)
+  tx_hash      String?  @db.VarChar(255)
+  created_at   DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  subasta   Subasta @relation(fields: [subasta_id], references: [id], onDelete: Cascade)
+  comprador Usuario @relation(fields: [comprador_id], references: [id], onDelete: Cascade)
+
+  @@map("ofertas")
+}
+
+model Orden {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  comprador_id       String      @db.Uuid
+  producto_id        String      @db.Uuid
+  subasta_id         String?     @db.Uuid
+  total              Decimal     @db.Decimal(12, 2)
+  estado             EstadoOrden @default(pendiente)
+  metodo_pago        String      @db.VarChar(80)
+  direccion_envio    String      @db.VarChar(255)
+  tracking_logistica String?     @db.VarChar(255)
+  created_at         DateTime    @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  comprador Usuario  @relation(fields: [comprador_id], references: [id])
+  producto  Producto @relation(fields: [producto_id], references: [id])
+  subasta   Subasta? @relation(fields: [subasta_id], references: [id])
+
+  @@map("ordenes")
+}
+
+model VentaPOS {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  empleado_id String   @db.Uuid
+  producto_id String   @db.Uuid
+  cantidad    Int
+  total       Decimal  @db.Decimal(12, 2)
+  metodo_pago String   @db.VarChar(80)
+  created_at  DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  empleado Empleado @relation(fields: [empleado_id], references: [id])
+  producto Producto @relation(fields: [producto_id], references: [id])
+
+  @@map("ventas_pos")
+}
+
+// --- REGISTROS TÉCNICOS ---
+
+model TransaccionWeb3 {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referencia_id  String   @db.Uuid
+  tipo_operacion String   @db.VarChar(100)
+  tx_hash        String   @unique @db.VarChar(255)
+  costo_gas      Decimal  @db.Decimal(18, 8)
+  estado_red     String   @default("confirmada") @db.VarChar(50)
+  created_at     DateTime @default(now()) @db.Timestamptz()
+
+  @@map("transacciones_web3")
+}
+
+model QRToken {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lote_id     String   @db.Uuid
+  url_publica String   @db.VarChar(255)
+  created_at  DateTime @default(now()) @db.Timestamptz()
+
+  // Relaciones
+  lote Lote @relation(fields: [lote_id], references: [id], onDelete: Cascade)
+
+  @@map("qr_tokens")
+}
