@@ -1,0 +1,49 @@
+---
+import type { Messages } from '../lib/i18n/messages';
+
+interface Props {
+	online: boolean;
+	m: Messages;
+}
+
+const { online, m } = Astro.props;
+---
+
+<div
+	class={`api-status ${online ? 'online' : 'offline'}`}
+	title={online ? m.api.online : m.api.offline}
+>
+	<span class="dot" aria-hidden="true"></span>
+	<span>{online ? m.api.online : m.api.offline}</span>
+</div>
+
+<style>
+	.api-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.online {
+		background: rgba(22, 101, 52, 0.12);
+		color: #166534;
+	}
+
+	.offline {
+		background: rgba(185, 28, 28, 0.12);
+		color: #991b1b;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: currentColor;
+	}
+</style>

@@ -1,49 +1,45 @@
 ---
+export const prerender = false;
+
 import Layout from '../layouts/Layout.astro';
+import MarketGrid from '../components/MarketGrid.astro';
+import AuctionStrip from '../components/AuctionStrip.astro';
+import ApiStatus from '../components/ApiStatus.astro';
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import { getCatalogData } from '../lib/catalog';
+import { allowsCategory } from '../lib/privacy/consent';
+import {
+	getI18n,
+	isLocale,
+	persistLocaleCookie,
+	readConsent,
+	resolveLocale,
+} from '../lib/i18n';
 
-const products = [
-	{
-		origin: 'ETIOPIA · YIRGACHEFFE',
-		title: 'Gedeo Zone Lot #402',
-		score: '92',
-		price: '$18.50/lb',
-		label: 'AUCTION',
-		description: 'Jasmine, bergamot, and citrus notes with a clean floral finish.',
-		accent: 'from-ruby-500 via-amber-500 to-lime-400',
-	},
-	{
-		origin: 'ECUADOR · ARRIBA NACIONAL',
-		title: 'Los Rios Heirloom',
-		score: '88',
-		price: '$9.20/lb',
-		label: 'DIRECT BUY',
-		description: 'Deep floral aroma with intense nuttiness and a silky body.',
-		accent: 'from-slate-700 via-stone-500 to-amber-300',
-	},
-	{
-		origin: 'COLOMBIA · HUILA',
-		title: 'Pink Bourbon Micro-lot',
-		score: '90',
-		price: '$14.00/lb',
-		label: 'DIRECT BUY',
-		description: 'Sweet stone fruit notes with a silky body and washed clarity.',
-		accent: 'from-amber-900 via-stone-700 to-zinc-300',
-	},
-	{
-		origin: 'MADAGASCAR · SAMBIRANO',
-		title: 'Organic Fine Flavor',
-		score: '86',
-		price: '$7.50/lb',
-		label: 'AUCTION',
-		description: 'Bright fruity acidity with raspberry and cherry sweetness.',
-		accent: 'from-emerald-950 via-slate-700 to-orange-400',
-	},
-];
+const queryLang = Astro.url.searchParams.get('lang');
+if (isLocale(queryLang)) {
+	const consent = readConsent(Astro.cookies);
+	if (consent && allowsCategory(consent, 'functional')) {
+		persistLocaleCookie(Astro.cookies, queryLang);
+	}
+	return Astro.redirect(Astro.url.pathname);
+}
 
-const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m, pm } = getI18n(locale);
+const catalog = await getCatalogData(locale);
+
+const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];
 ---
 
-<Layout>
+<Layout
+	locale={locale}
+	title={m.meta.title}
+	description={m.meta.description}
+	pm={pm}
+	consent={consent}
+>
 	<main class="page-shell">
 		<header class="topbar">
 			<div class="brand">
@@ -51,25 +47,26 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 				<span>ORIGIN TECH</span>
 			</div>
 			<nav>
-				<a href="#market">Market</a>
-				<a href="#auctions">Auctions</a>
-				<a href="#wallet">Wallet</a>
-				<a href="#profile">Profile</a>
+				<a href="#market">{m.nav.market}</a>
+				<a href="#auctions">{m.nav.auctions}</a>
+				<a href="#wallet">{m.nav.wallet}</a>
+				<a href="#profile">{m.nav.profile}</a>
 			</nav>
-			<div class="icon-badge">⌂</div>
+			<div class="topbar-actions">
+				<LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
+				<ApiStatus online={catalog.apiOnline && !catalog.error} m={m} />
+				<div class="icon-badge">⌂</div>
+			</div>
 		</header>
 
 		<section class="hero">
 			<div class="hero-copy">
-				<p class="eyebrow">PREMIUM HARVEST 2024</p>
-				<h1>Specialty Trade Ecosystem</h1>
-				<p class="lede">
-					Direct-to-origin marketplace for traceable coffee and cacao lots with clean verification,
-					live auctions, and professional sourcing.
-				</p>
+				<p class="eyebrow">{m.hero.eyebrow}</p>
+				<h1>{m.hero.title}</h1>
+				<p class="lede">{m.hero.lede}</p>
 				<div class="hero-actions">
-					<a class="button button-primary" href="#market">Browse Inventory</a>
-					<a class="button button-secondary" href="#auctions">Live Auctions</a>
+					<a class="button button-primary" href="#market">{m.hero.browse}</a>
+					<a class="button button-secondary" href="#auctions">{m.hero.auctions}</a>
 				</div>
 			</div>
 			<div class="hero-visual" aria-hidden="true">
@@ -81,8 +78,8 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 			</div>
 		</section>
 
-		<section class="filters" aria-label="Filters">
-			<button class="filters-toggle">Filters</button>
+		<section class="filters" aria-label={m.filters.aria}>
+			<button class="filters-toggle" type="button">{m.filters.toggle}</button>
 			<div class="chips">
 				{filters.map((filter) => <span class="chip">{filter}</span>)}
 			</div>
@@ -92,71 +89,47 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 			</div>
 		</section>
 
-		<section class="market" id="market">
-			{products.map((product) => (
-				<article class="card">
-					<div class={`card-art ${product.accent}`}>
-						<span class="card-label">{product.label}</span>
-						<div class="art-shadow"></div>
-					</div>
-					<div class="card-body">
-						<div class="meta-row">
-							<p class="origin">{product.origin}</p>
-							<span class="score">{product.score}</span>
-						</div>
-						<h2>{product.title}</h2>
-						<p class="description">{product.description}</p>
-						<div class="price-row">
-							<div>
-								<span class="price-label">Current bid</span>
-								<strong>{product.price}</strong>
-							</div>
-							<button class="mini-button" type="button">↗</button>
-						</div>
-					</div>
-				</article>
-			))}
-		</section>
-
-		<section class="integrity" id="auctions">
-			<div class="integrity-copy">
-				<p class="eyebrow dark">Verifiable Integrity.</p>
-				<p>
-					Every lot is validated with sensory evaluation and traceability checks. The result is a clean
-					marketplace where farmers and buyers can trade with confidence.
-				</p>
-			</div>
-			<div class="stats">
-				<div class="stat">
-					<span>Network Volume</span>
-					<strong>$142M+</strong>
-				</div>
-				<div class="stat">
-					<span>Verified Producers</span>
-					<strong>12,400</strong>
-				</div>
-			</div>
-		</section>
+		<MarketGrid
+			items={catalog.items}
+			error={catalog.error}
+			apiOnline={catalog.apiOnline}
+			m={m}
+		/>
+		<AuctionStrip
+			auctions={catalog.auctions}
+			stats={catalog.stats}
+			m={m}
+			locale={locale}
+		/>
 
 		<footer class="footer">
 			<div>
 				<h3>ORIGIN TECH</h3>
-				<p>The digital infrastructure for the next generation of specialty agricultural trade.</p>
+				<p>{m.footer.tagline}</p>
 			</div>
 			<div>
-				<h4>Platform</h4>
-				<a href="#market">Marketplace</a>
-				<a href="#auctions">Traceability Hub</a>
-				<a href="#profile">Sustainability</a>
+				<h4>{m.footer.platform}</h4>
+				<a href="#market">{m.footer.marketplace}</a>
+				<a href="#auctions">{m.footer.traceability}</a>
+				<a href="#profile">{m.footer.sustainability}</a>
 			</div>
 			<div>
-				<h4>Resources</h4>
-				<a href="#">Documentation</a>
-				<a href="#">API Reference</a>
-				<a href="#">Privacy Policy</a>
+				<h4>{m.footer.resources}</h4>
+				<a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">{m.footer.apiReference}</a>
+				<a href="#market">{m.footer.documentation}</a>
+				<a href="/privacidad">{m.footer.privacy}</a>
+				<button type="button" class="footer-link-btn" id="footer-cookie-settings">
+					{pm.cookies.manageLink}
+				</button>
 			</div>
 		</footer>
 	</main>
+
+	<script>
+		document.getElementById('footer-cookie-settings')?.addEventListener('click', () => {
+			document.dispatchEvent(new CustomEvent('origin:open-cookie-settings'));
+		});
+	</script>
 
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
@@ -182,8 +155,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 
 		.topbar,
 		.filters,
-		.market,
-		.integrity,
 		.footer {
 			border-radius: 24px;
 		}
@@ -203,11 +174,15 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 		nav,
 		.hero-actions,
 		.chips,
-		.meta-row,
-		.price-row,
 		.filters,
-		.footer {
+		.footer,
+		.topbar-actions {
 			display: flex;
+		}
+
+		.topbar-actions {
+			align-items: center;
+			gap: 12px;
 		}
 
 		.brand {
@@ -220,7 +195,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 
 		.menu,
 		.icon-badge,
-		.mini-button,
 		.filters-toggle {
 			display: grid;
 			place-items: center;
@@ -290,12 +264,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 			margin-bottom: 22px;
 		}
 
-		.eyebrow.dark {
-			background: rgba(16, 185, 129, 0.12);
-			color: #19b88b;
-			margin-bottom: 16px;
-		}
-
 		h1 {
 			font-family: 'Space Grotesk', sans-serif;
 			font-size: clamp(3.2rem, 6vw, 5.8rem);
@@ -306,8 +274,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 		}
 
 		.lede,
-		.integrity-copy p,
-		.card-body .description,
 		.footer p {
 			color: rgba(247, 243, 238, 0.76);
 			line-height: 1.6;
@@ -499,178 +465,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 			font-size: 1rem;
 		}
 
-		.market {
-			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-			gap: 18px;
-			padding: 38px 0 30px;
-		}
-
-		.card {
-			background: rgba(255, 255, 255, 0.72);
-			border-radius: 18px;
-			overflow: hidden;
-			border: 1px solid rgba(18, 18, 18, 0.08);
-			box-shadow: 0 18px 40px rgba(18, 18, 18, 0.08);
-		}
-
-		.card-art {
-			position: relative;
-			height: 220px;
-			padding: 14px;
-			isolation: isolate;
-		}
-
-		.card-art::before {
-			content: '';
-			position: absolute;
-			inset: 0;
-			background:
-				radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.16), transparent 22%),
-				linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.16));
-		}
-
-		.card-label {
-			position: relative;
-			z-index: 1;
-			display: inline-block;
-			padding: 6px 8px;
-			border-radius: 8px;
-			background: rgba(8, 8, 8, 0.78);
-			color: #f3efe8;
-			font-size: 0.64rem;
-			font-weight: 800;
-			letter-spacing: 0.08em;
-		}
-
-		.art-shadow {
-			position: absolute;
-			inset: auto 12px 14px;
-			height: 34px;
-			border-radius: 999px;
-			background: rgba(0, 0, 0, 0.28);
-			filter: blur(12px);
-		}
-
-		.card-body {
-			padding: 14px 14px 18px;
-		}
-
-		.meta-row,
-		.price-row {
-			justify-content: space-between;
-			align-items: center;
-			gap: 10px;
-		}
-
-		.origin {
-			margin: 0;
-			font-size: 0.68rem;
-			font-weight: 800;
-			letter-spacing: 0.08em;
-			color: #4e8f7d;
-		}
-
-		.score {
-			font-family: 'Space Grotesk', sans-serif;
-			font-size: 1.15rem;
-			color: #1e1e1e;
-		}
-
-		.card h2 {
-			margin: 10px 0 8px;
-			font-size: 1.22rem;
-			line-height: 1.1;
-			font-family: 'Space Grotesk', sans-serif;
-		}
-
-		.card-body .description {
-			color: rgba(18, 18, 18, 0.64);
-			margin: 0 0 18px;
-		}
-
-		.price-label {
-			display: block;
-			font-size: 0.64rem;
-			font-weight: 800;
-			letter-spacing: 0.08em;
-			text-transform: uppercase;
-			color: rgba(18, 18, 18, 0.44);
-			margin-bottom: 5px;
-		}
-
-		.price-row strong {
-			font-size: 1.35rem;
-		}
-
-		.mini-button {
-			width: 42px;
-			height: 42px;
-			border: 0;
-			border-radius: 10px;
-			background: #0f1112;
-			color: white;
-			font-size: 1rem;
-		}
-
-		.card-art.from-ruby-500 {
-			background: linear-gradient(180deg, #2b5c45, #161f1b 50%, #7a3a20 100%);
-		}
-
-		.card-art.from-slate-700 {
-			background: linear-gradient(180deg, #0f1112, #12222f 55%, #d8a760 100%);
-		}
-
-		.card-art.from-amber-900 {
-			background: linear-gradient(180deg, #131516, #3b2418 50%, #b38a67 100%);
-		}
-
-		.card-art.from-emerald-950 {
-			background: linear-gradient(180deg, #102221, #1b2d36 55%, #d18a4d 100%);
-		}
-
-		.integrity {
-			display: grid;
-			grid-template-columns: 1.2fr 0.8fr;
-			gap: 28px;
-			align-items: center;
-			padding: 40px;
-			background: linear-gradient(180deg, #151515, #1d1d1d);
-			color: #f4f1eb;
-		}
-
-		.integrity-copy p {
-			color: rgba(244, 241, 235, 0.72);
-			font-size: 1.02rem;
-		}
-
-		.stats {
-			display: grid;
-			gap: 16px;
-		}
-
-		.stat {
-			padding: 18px 18px 20px;
-			border: 1px solid rgba(255, 255, 255, 0.24);
-			border-radius: 14px;
-			background: rgba(255, 255, 255, 0.02);
-		}
-
-		.stat span {
-			display: block;
-			font-size: 0.72rem;
-			font-weight: 800;
-			letter-spacing: 0.1em;
-			text-transform: uppercase;
-			color: rgba(244, 241, 235, 0.65);
-			margin-bottom: 10px;
-		}
-
-		.stat strong {
-			font-size: clamp(2rem, 4vw, 3rem);
-			font-family: 'Space Grotesk', sans-serif;
-		}
-
 		.footer {
 			justify-content: space-between;
 			gap: 24px;
@@ -690,16 +484,29 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 		}
 
 		.footer p,
-		.footer a {
+		.footer a,
+		.footer-link-btn {
 			color: rgba(18, 18, 18, 0.72);
 			display: block;
 			margin: 0 0 8px;
 		}
 
+		.footer-link-btn {
+			background: none;
+			border: 0;
+			padding: 0;
+			font: inherit;
+			text-align: left;
+			cursor: pointer;
+			opacity: 0.82;
+		}
+
+		.footer-link-btn:hover {
+			opacity: 1;
+		}
+
 		@media (max-width: 980px) {
-			.hero,
-			.market,
-			.integrity {
+			.hero {
 				grid-template-columns: 1fr;
 			}
 
@@ -707,17 +514,14 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 				display: none;
 			}
 
+			.topbar-actions {
+				flex-wrap: wrap;
+				justify-content: flex-end;
+			}
+
 			.hero-copy,
 			.hero-visual {
 				min-height: 420px;
-			}
-
-			.market {
-				grid-template-columns: repeat(2, minmax(0, 1fr));
-			}
-
-			.integrity {
-				padding: 30px;
 			}
 		}
 
@@ -730,8 +534,7 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 			.topbar,
 			.filters,
 			.hero-copy,
-			.hero-visual,
-			.integrity {
+			.hero-visual {
 				border-radius: 20px;
 			}
 
@@ -748,10 +551,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 				font-size: clamp(2.6rem, 15vw, 4.2rem);
 			}
 
-			.market {
-				grid-template-columns: 1fr;
-			}
-
 			.filters {
 				align-items: flex-start;
 				flex-direction: column;
@@ -759,10 +558,6 @@ const filters = ['Type: All', 'Origin', 'Score: 85+', 'Process'];
 
 			.view-icons {
 				align-self: flex-end;
-			}
-
-			.card-art {
-				height: 190px;
 			}
 
 			.footer {
