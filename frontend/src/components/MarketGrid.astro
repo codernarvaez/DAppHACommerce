@@ -1,0 +1,237 @@
+---
+import type { MarketItem } from '../lib/types';
+import type { Messages } from '../lib/i18n/messages';
+import { interpolate } from '../lib/i18n/messages';
+
+interface Props {
+	items: MarketItem[];
+	error?: string;
+	apiOnline: boolean;
+	m: Messages;
+}
+
+const { items, error, apiOnline, m } = Astro.props;
+---
+
+<section class="market" id="market">
+	{error && (
+		<div class="status-banner status-error" role="alert">
+			<strong>{m.market.catalogErrorTitle}</strong>
+			<span>{error}</span>
+			{!apiOnline && <small>{m.market.catalogErrorHint}</small>}
+		</div>
+	)}
+
+	{!error && items.length === 0 && (
+		<div class="status-banner status-empty">
+			<strong>{m.market.emptyTitle}</strong>
+			<span>{m.market.emptyBody}</span>
+			<a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">{m.market.openApi}</a>
+		</div>
+	)}
+
+	{items.map((product) => (
+		<article class="card" id={`product-${product.id}`}>
+			<div class={`card-art ${product.accent}`}>
+				<span class="card-label">{product.label}</span>
+				<div class="art-shadow"></div>
+			</div>
+			<div class="card-body">
+				<div class="meta-row">
+					<p class="origin">{product.origin}</p>
+					<span class="stock">{interpolate(m.market.stock, { count: product.stock })}</span>
+				</div>
+				<h2>{product.title}</h2>
+				<p class="description">{product.description}</p>
+				<div class="price-row">
+					<div>
+						<span class="price-label">{product.priceLabel}</span>
+						<strong>{product.price}</strong>
+					</div>
+					<a
+						class="mini-button"
+						href={product.subastaId ? `#auction-${product.subastaId}` : `#product-${product.id}`}
+						aria-label={interpolate(m.market.viewProduct, { title: product.title })}
+					>
+						↗
+					</a>
+				</div>
+			</div>
+		</article>
+	))}
+</section>
+
+<style>
+	.market {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 18px;
+		padding: 38px 0 30px;
+	}
+
+	.status-banner {
+		grid-column: 1 / -1;
+		padding: 22px 24px;
+		border-radius: 18px;
+		border: 1px solid rgba(18, 18, 18, 0.08);
+		background: rgba(255, 255, 255, 0.82);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.status-error {
+		border-color: rgba(185, 28, 28, 0.18);
+		background: rgba(254, 242, 242, 0.92);
+	}
+
+	.status-empty a {
+		color: #166534;
+		font-weight: 700;
+		text-decoration: none;
+		width: fit-content;
+	}
+
+	.card {
+		background: rgba(255, 255, 255, 0.72);
+		border-radius: 18px;
+		overflow: hidden;
+		border: 1px solid rgba(18, 18, 18, 0.08);
+		box-shadow: 0 18px 40px rgba(18, 18, 18, 0.08);
+	}
+
+	.card-art {
+		position: relative;
+		height: 220px;
+		padding: 14px;
+		isolation: isolate;
+	}
+
+	.card-art::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.16), transparent 22%),
+			linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.16));
+	}
+
+	.card-label {
+		position: relative;
+		z-index: 1;
+		display: inline-block;
+		padding: 6px 8px;
+		border-radius: 8px;
+		background: rgba(8, 8, 8, 0.78);
+		color: #f3efe8;
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+	}
+
+	.art-shadow {
+		position: absolute;
+		inset: auto 12px 14px;
+		height: 34px;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.28);
+		filter: blur(12px);
+	}
+
+	.card-body {
+		padding: 14px 14px 18px;
+	}
+
+	.meta-row,
+	.price-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.origin {
+		margin: 0;
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		color: #4e8f7d;
+	}
+
+	.stock {
+		font-family: 'Space Grotesk', sans-serif;
+		font-size: 0.95rem;
+		color: #1e1e1e;
+	}
+
+	h2 {
+		margin: 10px 0 8px;
+		font-size: 1.22rem;
+		line-height: 1.1;
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.description {
+		color: rgba(18, 18, 18, 0.64);
+		margin: 0 0 18px;
+		line-height: 1.6;
+	}
+
+	.price-label {
+		display: block;
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(18, 18, 18, 0.44);
+		margin-bottom: 5px;
+	}
+
+	.price-row strong {
+		font-size: 1.35rem;
+	}
+
+	.mini-button {
+		display: grid;
+		place-items: center;
+		width: 42px;
+		height: 42px;
+		border-radius: 10px;
+		background: #0f1112;
+		color: white;
+		font-size: 1rem;
+		text-decoration: none;
+	}
+
+	.card-art.from-ruby-500 {
+		background: linear-gradient(180deg, #2b5c45, #161f1b 50%, #7a3a20 100%);
+	}
+
+	.card-art.from-slate-700 {
+		background: linear-gradient(180deg, #0f1112, #12222f 55%, #d8a760 100%);
+	}
+
+	.card-art.from-amber-900 {
+		background: linear-gradient(180deg, #131516, #3b2418 50%, #b38a67 100%);
+	}
+
+	.card-art.from-emerald-950 {
+		background: linear-gradient(180deg, #102221, #1b2d36 55%, #d18a4d 100%);
+	}
+
+	@media (max-width: 980px) {
+		.market {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 720px) {
+		.market {
+			grid-template-columns: 1fr;
+		}
+
+		.card-art {
+			height: 190px;
+		}
+	}
+</style>

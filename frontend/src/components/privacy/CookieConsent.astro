@@ -1,0 +1,466 @@
+---
+import type { PrivacyMessages } from '../../lib/i18n/privacy-messages';
+import type { Locale } from '../../lib/i18n/locales';
+import { SITE_COOKIES, getCookieLabel } from '../../lib/privacy/cookie-registry';
+import { CONSENT_COOKIE, CONSENT_MAX_AGE } from '../../lib/privacy/consent';
+
+interface Props {
+	locale: Locale;
+	pm: PrivacyMessages;
+	hasConsent: boolean;
+}
+
+const { locale, pm, hasConsent } = Astro.props;
+const labels = pm.cookies;
+const cookieRows = SITE_COOKIES.map((cookie) => ({
+	...cookie,
+	purposeLabel: getCookieLabel(locale, cookie.purpose),
+}));
+---
+
+<div
+	id="cookie-consent-root"
+	class:list={['cookie-root', { hidden: hasConsent }]}
+	data-locale={locale}
+	data-labels={JSON.stringify(labels)}
+	data-cookie-rows={JSON.stringify(cookieRows)}
+>
+	<div class="cookie-banner" role="dialog" aria-labelledby="cookie-banner-title" aria-modal="true">
+		<div class="cookie-banner-copy">
+			<h2 id="cookie-banner-title">{labels.bannerTitle}</h2>
+			<p>{labels.bannerBody}</p>
+			<a class="cookie-link" href="/privacidad">{labels.policyLink}</a>
+		</div>
+		<div class="cookie-banner-actions">
+			<button type="button" class="btn btn-ghost" data-action="reject">{labels.rejectOptional}</button>
+			<button type="button" class="btn btn-secondary" data-action="customize">{labels.customize}</button>
+			<button type="button" class="btn btn-primary" data-action="accept-all">{labels.acceptAll}</button>
+		</div>
+	</div>
+
+	<div class="cookie-modal hidden" role="dialog" aria-labelledby="cookie-modal-title" aria-modal="true">
+		<div class="cookie-modal-panel">
+			<h2 id="cookie-modal-title">{labels.modalTitle}</h2>
+			<p class="modal-lede">{labels.modalBody}</p>
+
+			<div class="pref-row">
+				<div>
+					<h3>{labels.essentialTitle}</h3>
+					<p>{labels.essentialDesc}</p>
+				</div>
+				<span class="pref-badge">{labels.alwaysOn}</span>
+			</div>
+
+			<div class="pref-row">
+				<div>
+					<h3>{labels.functionalTitle}</h3>
+					<p>{labels.functionalDesc}</p>
+				</div>
+				<label class="switch">
+					<input type="checkbox" id="pref-functional" />
+					<span></span>
+				</label>
+			</div>
+
+			<div class="pref-row">
+				<div>
+					<h3>{labels.analyticsTitle}</h3>
+					<p>{labels.analyticsDesc}</p>
+				</div>
+				<label class="switch">
+					<input type="checkbox" id="pref-analytics" />
+					<span></span>
+				</label>
+			</div>
+
+			<div class="pref-row">
+				<div>
+					<h3>{labels.marketingTitle}</h3>
+					<p>{labels.marketingDesc}</p>
+				</div>
+				<label class="switch">
+					<input type="checkbox" id="pref-marketing" />
+					<span></span>
+				</label>
+			</div>
+
+			<div class="cookie-table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>{labels.tableName}</th>
+							<th>{labels.tablePurpose}</th>
+							<th>{labels.tableDuration}</th>
+							<th>{labels.tableProvider}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{cookieRows.map((row) => (
+							<tr>
+								<td><code>{row.name}</code></td>
+								<td>{row.purposeLabel}</td>
+								<td>{row.duration}</td>
+								<td>{row.provider}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+
+			<div class="cookie-modal-actions">
+				<button type="button" class="btn btn-ghost" data-action="close-modal">{labels.rejectOptional}</button>
+				<button type="button" class="btn btn-primary" data-action="save">{labels.save}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<button type="button" id="cookie-manage-fab" class="cookie-fab hidden" aria-label={labels.manageLink}>
+	{labels.manageLink}
+</button>
+
+<script define:vars={{ consentCookie: CONSENT_COOKIE, consentMaxAge: CONSENT_MAX_AGE }}>
+	const root = document.getElementById('cookie-consent-root');
+	const fab = document.getElementById('cookie-manage-fab');
+
+	function readConsent() {
+		const match = document.cookie.match(new RegExp(`(?:^|; )${consentCookie}=([^;]*)`));
+		if (!match) return null;
+		try {
+			return JSON.parse(decodeURIComponent(match[1]));
+		} catch {
+			return null;
+		}
+	}
+
+	function writeConsent(state) {
+		const value = encodeURIComponent(JSON.stringify(state));
+		document.cookie = `${consentCookie}=${value};path=/;max-age=${consentMaxAge};SameSite=Lax`;
+		localStorage.setItem(consentCookie, JSON.stringify(state));
+		applyConsent(state);
+	}
+
+	function clearLocaleCookie() {
+		document.cookie = 'locale=;path=/;max-age=0;SameSite=Lax';
+	}
+
+	function applyConsent(state) {
+		if (!state.functional) clearLocaleCookie();
+		window.dispatchEvent(new CustomEvent('origin:consent-updated', { detail: state }));
+	}
+
+	function hideBanner() {
+		root?.classList.add('hidden');
+		fab?.classList.remove('hidden');
+	}
+
+	function showModal() {
+		root?.querySelector('.cookie-modal')?.classList.remove('hidden');
+		root?.classList.remove('hidden');
+	}
+
+	function hideModal() {
+		root?.querySelector('.cookie-modal')?.classList.add('hidden');
+	}
+
+	function saveConsent(partial) {
+		writeConsent({
+			version: 1,
+			essential: true,
+			functional: partial.functional,
+			analytics: partial.analytics,
+			marketing: partial.marketing,
+			updatedAt: new Date().toISOString(),
+		});
+		hideModal();
+		hideBanner();
+	}
+
+	const existing = readConsent();
+	if (existing) {
+		root?.classList.add('hidden');
+		fab?.classList.remove('hidden');
+		applyConsent(existing);
+	}
+
+	root?.addEventListener('click', (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const action = target.dataset.action;
+		if (!action) return;
+
+		if (action === 'accept-all') {
+			saveConsent({ functional: true, analytics: true, marketing: true });
+			return;
+		}
+
+		if (action === 'reject') {
+			saveConsent({ functional: false, analytics: false, marketing: false });
+			return;
+		}
+
+		if (action === 'customize') {
+			showModal();
+			return;
+		}
+
+		if (action === 'close-modal') {
+			hideModal();
+			return;
+		}
+
+		if (action === 'save') {
+			saveConsent({
+				functional: document.getElementById('pref-functional')?.checked ?? false,
+				analytics: document.getElementById('pref-analytics')?.checked ?? false,
+				marketing: document.getElementById('pref-marketing')?.checked ?? false,
+			});
+		}
+	});
+
+	fab?.addEventListener('click', () => {
+		const current = readConsent();
+		document.getElementById('pref-functional').checked = current?.functional ?? false;
+		document.getElementById('pref-analytics').checked = current?.analytics ?? false;
+		document.getElementById('pref-marketing').checked = current?.marketing ?? false;
+		showModal();
+	});
+
+	document.addEventListener('origin:open-cookie-settings', () => {
+		fab?.click();
+	});
+</script>
+
+<style>
+	.cookie-root {
+		position: fixed;
+		inset: auto 16px 16px 16px;
+		z-index: 1000;
+	}
+
+	.cookie-root.hidden {
+		display: none;
+	}
+
+	.cookie-banner {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding: 20px 22px;
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.96);
+		border: 1px solid rgba(18, 18, 18, 0.1);
+		box-shadow: 0 18px 50px rgba(18, 18, 18, 0.16);
+	}
+
+	.cookie-banner h2 {
+		margin: 0 0 8px;
+		font-size: 1.05rem;
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.cookie-banner p,
+	.modal-lede {
+		margin: 0;
+		color: rgba(18, 18, 18, 0.72);
+		line-height: 1.55;
+		max-width: 52rem;
+	}
+
+	.cookie-link {
+		display: inline-block;
+		margin-top: 10px;
+		color: #166534;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.cookie-banner-actions,
+	.cookie-modal-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.btn {
+		border: 0;
+		border-radius: 10px;
+		padding: 10px 14px;
+		font-size: 0.78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		cursor: pointer;
+	}
+
+	.btn-primary {
+		background: #111;
+		color: #fff;
+	}
+
+	.btn-secondary {
+		background: rgba(18, 18, 18, 0.08);
+		color: #111;
+	}
+
+	.btn-ghost {
+		background: transparent;
+		color: rgba(18, 18, 18, 0.72);
+	}
+
+	.cookie-modal {
+		position: fixed;
+		inset: 0;
+		background: rgba(10, 10, 10, 0.48);
+		display: grid;
+		place-items: center;
+		padding: 16px;
+	}
+
+	.cookie-modal.hidden {
+		display: none;
+	}
+
+	.cookie-modal-panel {
+		width: min(720px, 100%);
+		max-height: min(88vh, 900px);
+		overflow: auto;
+		background: #fff;
+		border-radius: 18px;
+		padding: 22px;
+	}
+
+	.cookie-modal-panel h2 {
+		margin: 0 0 8px;
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.pref-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 14px 0;
+		border-top: 1px solid rgba(18, 18, 18, 0.08);
+	}
+
+	.pref-row h3 {
+		margin: 0 0 4px;
+		font-size: 0.92rem;
+	}
+
+	.pref-row p {
+		margin: 0;
+		font-size: 0.86rem;
+		color: rgba(18, 18, 18, 0.64);
+		line-height: 1.5;
+	}
+
+	.pref-badge {
+		font-size: 0.72rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		color: #166534;
+		white-space: nowrap;
+	}
+
+	.switch {
+		position: relative;
+		width: 44px;
+		height: 26px;
+		flex-shrink: 0;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.switch span {
+		position: absolute;
+		inset: 0;
+		background: rgba(18, 18, 18, 0.16);
+		border-radius: 999px;
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+
+	.switch span::before {
+		content: '';
+		position: absolute;
+		width: 20px;
+		height: 20px;
+		left: 3px;
+		top: 3px;
+		background: #fff;
+		border-radius: 50%;
+		transition: transform 0.2s ease;
+	}
+
+	.switch input:checked + span {
+		background: #166534;
+	}
+
+	.switch input:checked + span::before {
+		transform: translateX(18px);
+	}
+
+	.cookie-table-wrap {
+		margin-top: 12px;
+		overflow: auto;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.82rem;
+	}
+
+	th,
+	td {
+		text-align: left;
+		padding: 8px;
+		border-bottom: 1px solid rgba(18, 18, 18, 0.08);
+		vertical-align: top;
+	}
+
+	.cookie-fab {
+		position: fixed;
+		right: 16px;
+		bottom: 16px;
+		z-index: 999;
+		border: 0;
+		border-radius: 999px;
+		padding: 10px 14px;
+		background: #111;
+		color: #fff;
+		font-size: 0.72rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		cursor: pointer;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+	}
+
+	.cookie-fab.hidden {
+		display: none;
+	}
+
+	@media (max-width: 720px) {
+		.cookie-root {
+			inset: auto 10px 10px 10px;
+		}
+
+		.cookie-banner-actions,
+		.cookie-modal-actions {
+			width: 100%;
+		}
+
+		.btn {
+			flex: 1 1 auto;
+		}
+	}
+</style>

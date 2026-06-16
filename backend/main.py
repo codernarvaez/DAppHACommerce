@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager  
+from app.core.database import prisma
 
 from app.api import lotes, productos, pos, subastas, usuarios
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await prisma.connect()
+    yield
+    await prisma.disconnect()
 
 app = FastAPI(
     title="API DAppHACommerce / STGC",
     description="Backend principal con trazabilidad y gestión.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configuración básica de CORS (Cors ajustado para desarrollo, revisar en producción)

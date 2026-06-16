@@ -1,0 +1,277 @@
+---
+import type { AuctionItem } from '../lib/types';
+import type { Messages } from '../lib/i18n/messages';
+import { interpolate } from '../lib/i18n/messages';
+import { formatDateTime, formatRelativeEnd } from '../lib/format';
+import type { Locale } from '../lib/i18n';
+
+interface Props {
+	auctions: AuctionItem[];
+	stats: {
+		productCount: number;
+		auctionCount: number;
+		publishedCount: number;
+	};
+	m: Messages;
+	locale: Locale;
+}
+
+const { auctions, stats, m, locale } = Astro.props;
+---
+
+<section class="integrity" id="auctions">
+	<div class="integrity-copy">
+		<p class="eyebrow dark">{m.auction.eyebrow}</p>
+		<p>{m.auction.body}</p>
+	</div>
+
+	<div class="stats">
+		<div class="stat">
+			<span>{m.auction.productsInCatalog}</span>
+			<strong>{stats.productCount}</strong>
+		</div>
+		<div class="stat">
+			<span>{m.auction.activeAuctions}</span>
+			<strong>{stats.auctionCount}</strong>
+		</div>
+	</div>
+</section>
+
+{auctions.length > 0 && (
+	<section
+		class="auction-list"
+		aria-label={m.auction.liveSection}
+		data-ended-label={m.auction.ended}
+	>
+		<div class="auction-header">
+			<h2>{m.auction.liveSection}</h2>
+			<p>{m.auction.liveSectionBody}</p>
+		</div>
+		<div class="auction-grid">
+			{auctions.map((auction) => (
+				<article class="auction-card" id={`auction-${auction.id}`}>
+					<div class="auction-top">
+						<span class={`badge badge-${auction.estado}`}>{auction.estadoLabel}</span>
+						<span class="timer" data-end={auction.fechaFin}>
+							{formatRelativeEnd(auction.fechaFin, m.auction.ended)}
+						</span>
+					</div>
+					<h3>{auction.productName}</h3>
+					<p class="auction-meta">{auction.categoria}</p>
+					<div class="auction-prices">
+						<div>
+							<span>{m.auction.currentBid}</span>
+							<strong>{auction.precioActual}</strong>
+						</div>
+						<div>
+							<span>{m.auction.initial}</span>
+							<strong>{auction.precioInicial}</strong>
+						</div>
+					</div>
+					<p class="auction-end">
+						{interpolate(m.auction.closes, {
+							date: formatDateTime(auction.fechaFin, locale),
+						})}
+					</p>
+				</article>
+			))}
+		</div>
+	</section>
+)}
+
+<script>
+	function refreshTimers() {
+		const section = document.querySelector<HTMLElement>('.auction-list');
+		const endedLabel = section?.dataset.endedLabel ?? 'Ended';
+
+		for (const timer of document.querySelectorAll<HTMLElement>('[data-end]')) {
+			const end = timer.dataset.end;
+			if (!end) continue;
+
+			const diff = new Date(end).getTime() - Date.now();
+			if (diff <= 0) {
+				timer.textContent = endedLabel;
+				continue;
+			}
+
+			const hours = Math.floor(diff / (1000 * 60 * 60));
+			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+			timer.textContent = hours >= 24 ? `${Math.floor(hours / 24)}d ${hours % 24}h` : `${hours}h ${minutes}m`;
+		}
+	}
+
+	refreshTimers();
+	window.setInterval(refreshTimers, 60_000);
+</script>
+
+<style>
+	.integrity {
+		display: grid;
+		grid-template-columns: 1.2fr 0.8fr;
+		gap: 28px;
+		align-items: center;
+		padding: 40px;
+		background: linear-gradient(180deg, #151515, #1d1d1d);
+		color: #f4f1eb;
+		border-radius: 24px;
+	}
+
+	.eyebrow.dark {
+		display: inline-flex;
+		width: fit-content;
+		padding: 6px 10px;
+		border-radius: 999px;
+		font-size: 0.74rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		background: rgba(16, 185, 129, 0.12);
+		color: #19b88b;
+		margin-bottom: 16px;
+	}
+
+	.integrity-copy p {
+		color: rgba(244, 241, 235, 0.72);
+		font-size: 1.02rem;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.stats {
+		display: grid;
+		gap: 16px;
+	}
+
+	.stat {
+		padding: 18px 18px 20px;
+		border: 1px solid rgba(255, 255, 255, 0.24);
+		border-radius: 14px;
+		background: rgba(255, 255, 255, 0.02);
+	}
+
+	.stat span {
+		display: block;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: rgba(244, 241, 235, 0.65);
+		margin-bottom: 10px;
+	}
+
+	.stat strong {
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.auction-list {
+		margin-top: 18px;
+		padding: 28px;
+		border-radius: 24px;
+		background: rgba(255, 255, 255, 0.64);
+		border: 1px solid rgba(18, 18, 18, 0.06);
+	}
+
+	.auction-header h2 {
+		margin: 0 0 8px;
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.auction-header p {
+		margin: 0 0 20px;
+		color: rgba(18, 18, 18, 0.64);
+	}
+
+	.auction-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+
+	.auction-card {
+		padding: 18px;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.82);
+		border: 1px solid rgba(18, 18, 18, 0.08);
+	}
+
+	.auction-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.badge {
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 0.68rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.badge-activa {
+		background: rgba(22, 101, 52, 0.12);
+		color: #166534;
+	}
+
+	.badge-programada {
+		background: rgba(29, 78, 216, 0.12);
+		color: #1d4ed8;
+	}
+
+	.timer {
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: rgba(18, 18, 18, 0.72);
+	}
+
+	.auction-card h3 {
+		margin: 0 0 6px;
+		font-family: 'Space Grotesk', sans-serif;
+	}
+
+	.auction-meta {
+		margin: 0 0 16px;
+		color: #4e8f7d;
+		font-size: 0.78rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.auction-prices {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.auction-prices span {
+		display: block;
+		font-size: 0.64rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgba(18, 18, 18, 0.44);
+		margin-bottom: 4px;
+	}
+
+	.auction-end {
+		margin: 0;
+		font-size: 0.82rem;
+		color: rgba(18, 18, 18, 0.56);
+	}
+
+	@media (max-width: 980px) {
+		.integrity,
+		.auction-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.integrity {
+			padding: 30px;
+		}
+	}
+</style>

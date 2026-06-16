@@ -1,11 +1,568 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+export const prerender = false;
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from '../layouts/Layout.astro';
+import MarketGrid from '../components/MarketGrid.astro';
+import AuctionStrip from '../components/AuctionStrip.astro';
+import ApiStatus from '../components/ApiStatus.astro';
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import { getCatalogData } from '../lib/catalog';
+import { allowsCategory } from '../lib/privacy/consent';
+import {
+	getI18n,
+	isLocale,
+	persistLocaleCookie,
+	readConsent,
+	resolveLocale,
+} from '../lib/i18n';
+
+const queryLang = Astro.url.searchParams.get('lang');
+if (isLocale(queryLang)) {
+	const consent = readConsent(Astro.cookies);
+	if (consent && allowsCategory(consent, 'functional')) {
+		persistLocaleCookie(Astro.cookies, queryLang);
+	}
+	return Astro.redirect(Astro.url.pathname);
+}
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m, pm } = getI18n(locale);
+const catalog = await getCatalogData(locale);
+
+const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];
 ---
 
-<Layout>
-	<Welcome />
+<Layout
+	locale={locale}
+	title={m.meta.title}
+	description={m.meta.description}
+	pm={pm}
+	consent={consent}
+>
+	<main class="page-shell">
+		<header class="topbar">
+			<div class="brand">
+				<span class="menu">☰</span>
+				<span>ORIGIN TECH</span>
+			</div>
+			<nav>
+				<a href="#market">{m.nav.market}</a>
+				<a href="#auctions">{m.nav.auctions}</a>
+				<a href="#wallet">{m.nav.wallet}</a>
+				<a href="#profile">{m.nav.profile}</a>
+			</nav>
+			<div class="topbar-actions">
+				<LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
+				<ApiStatus online={catalog.apiOnline && !catalog.error} m={m} />
+				<div class="icon-badge">⌂</div>
+			</div>
+		</header>
+
+		<section class="hero">
+			<div class="hero-copy">
+				<p class="eyebrow">{m.hero.eyebrow}</p>
+				<h1>{m.hero.title}</h1>
+				<p class="lede">{m.hero.lede}</p>
+				<div class="hero-actions">
+					<a class="button button-primary" href="#market">{m.hero.browse}</a>
+					<a class="button button-secondary" href="#auctions">{m.hero.auctions}</a>
+				</div>
+			</div>
+			<div class="hero-visual" aria-hidden="true">
+				<div class="grain grain-one"></div>
+				<div class="grain grain-two"></div>
+				<div class="device device-one"></div>
+				<div class="device device-two"></div>
+				<div class="cup"></div>
+			</div>
+		</section>
+
+		<section class="filters" aria-label={m.filters.aria}>
+			<button class="filters-toggle" type="button">{m.filters.toggle}</button>
+			<div class="chips">
+				{filters.map((filter) => <span class="chip">{filter}</span>)}
+			</div>
+			<div class="view-icons" aria-hidden="true">
+				<span>▦</span>
+				<span>☰</span>
+			</div>
+		</section>
+
+		<MarketGrid
+			items={catalog.items}
+			error={catalog.error}
+			apiOnline={catalog.apiOnline}
+			m={m}
+		/>
+		<AuctionStrip
+			auctions={catalog.auctions}
+			stats={catalog.stats}
+			m={m}
+			locale={locale}
+		/>
+
+		<footer class="footer">
+			<div>
+				<h3>ORIGIN TECH</h3>
+				<p>{m.footer.tagline}</p>
+			</div>
+			<div>
+				<h4>{m.footer.platform}</h4>
+				<a href="#market">{m.footer.marketplace}</a>
+				<a href="#auctions">{m.footer.traceability}</a>
+				<a href="#profile">{m.footer.sustainability}</a>
+			</div>
+			<div>
+				<h4>{m.footer.resources}</h4>
+				<a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">{m.footer.apiReference}</a>
+				<a href="#market">{m.footer.documentation}</a>
+				<a href="/privacidad">{m.footer.privacy}</a>
+				<button type="button" class="footer-link-btn" id="footer-cookie-settings">
+					{pm.cookies.manageLink}
+				</button>
+			</div>
+		</footer>
+	</main>
+
+	<script>
+		document.getElementById('footer-cookie-settings')?.addEventListener('click', () => {
+			document.dispatchEvent(new CustomEvent('origin:open-cookie-settings'));
+		});
+	</script>
+
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+		:global(html) {
+			scroll-behavior: smooth;
+			background: #f4f1eb;
+		}
+
+		:global(body) {
+			font-family: 'Manrope', sans-serif;
+			background:
+				radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(244, 241, 235, 0.96) 40%),
+				linear-gradient(180deg, #f7f3ee 0%, #f1eee8 100%);
+			color: #121212;
+		}
+
+		.page-shell {
+			width: min(1280px, calc(100% - 32px));
+			margin: 0 auto;
+			padding: 16px 0 56px;
+		}
+
+		.topbar,
+		.filters,
+		.footer {
+			border-radius: 24px;
+		}
+
+		.topbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 18px 22px;
+			background: rgba(255, 255, 255, 0.72);
+			backdrop-filter: blur(18px);
+			border: 1px solid rgba(18, 18, 18, 0.08);
+			box-shadow: 0 14px 35px rgba(18, 18, 18, 0.08);
+		}
+
+		.brand,
+		nav,
+		.hero-actions,
+		.chips,
+		.filters,
+		.footer,
+		.topbar-actions {
+			display: flex;
+		}
+
+		.topbar-actions {
+			align-items: center;
+			gap: 12px;
+		}
+
+		.brand {
+			align-items: center;
+			gap: 12px;
+			font-weight: 800;
+			letter-spacing: 0.08em;
+			font-size: 0.85rem;
+		}
+
+		.menu,
+		.icon-badge,
+		.filters-toggle {
+			display: grid;
+			place-items: center;
+		}
+
+		.menu,
+		.icon-badge {
+			width: 34px;
+			height: 34px;
+			border-radius: 999px;
+			background: #111;
+			color: white;
+			font-size: 0.9rem;
+		}
+
+		nav {
+			gap: 28px;
+			font-size: 0.92rem;
+		}
+
+		nav a,
+		.footer a {
+			color: inherit;
+			text-decoration: none;
+			opacity: 0.82;
+		}
+
+		nav a:hover,
+		.footer a:hover {
+			opacity: 1;
+		}
+
+		.hero {
+			display: grid;
+			grid-template-columns: 1.05fr 0.95fr;
+			gap: 26px;
+			margin-top: 18px;
+		}
+
+		.hero-copy,
+		.hero-visual {
+			min-height: 500px;
+			border-radius: 30px;
+			overflow: hidden;
+		}
+
+		.hero-copy {
+			padding: 42px;
+			background: linear-gradient(160deg, rgba(15, 15, 15, 0.97), rgba(25, 25, 25, 0.88));
+			color: #f7f3ee;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+		}
+
+		.eyebrow {
+			display: inline-flex;
+			width: fit-content;
+			padding: 6px 10px;
+			border-radius: 999px;
+			font-size: 0.74rem;
+			font-weight: 800;
+			letter-spacing: 0.12em;
+			background: rgba(28, 165, 132, 0.2);
+			color: #58d0b5;
+			margin-bottom: 22px;
+		}
+
+		h1 {
+			font-family: 'Space Grotesk', sans-serif;
+			font-size: clamp(3.2rem, 6vw, 5.8rem);
+			line-height: 0.95;
+			letter-spacing: -0.05em;
+			margin: 0;
+			max-width: 10ch;
+		}
+
+		.lede,
+		.footer p {
+			color: rgba(247, 243, 238, 0.76);
+			line-height: 1.6;
+			font-size: 1rem;
+			max-width: 36rem;
+		}
+
+		.hero-actions {
+			gap: 12px;
+			margin-top: 28px;
+			flex-wrap: wrap;
+		}
+
+		.button {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 14px 20px;
+			border-radius: 12px;
+			font-weight: 800;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			font-size: 0.78rem;
+			text-decoration: none;
+		}
+
+		.button-primary {
+			background: #f7f3ee;
+			color: #151515;
+		}
+
+		.button-secondary {
+			border: 1px solid rgba(255, 255, 255, 0.22);
+			color: #f7f3ee;
+			background: rgba(255, 255, 255, 0.04);
+		}
+
+		.hero-visual {
+			position: relative;
+			background:
+				radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.2), transparent 22%),
+				radial-gradient(circle at 70% 25%, rgba(255, 193, 100, 0.28), transparent 20%),
+				linear-gradient(180deg, #0f1317 0%, #252a2d 100%);
+			border: 1px solid rgba(18, 18, 18, 0.08);
+			box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+		}
+
+		.hero-visual::before {
+			content: '';
+			position: absolute;
+			inset: auto 0 0 0;
+			height: 36%;
+			background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.25) 18%, rgba(10, 10, 10, 0.65));
+		}
+
+		.hero-visual::after {
+			content: '';
+			position: absolute;
+			left: -5%;
+			bottom: 12%;
+			width: 82%;
+			height: 16%;
+			background: radial-gradient(circle at 30% 40%, #7a4e24 0 10%, transparent 11%),
+				radial-gradient(circle at 50% 55%, #b87a43 0 14%, transparent 15%),
+				radial-gradient(circle at 72% 48%, #5c341b 0 12%, transparent 13%);
+			filter: blur(2px);
+			transform: skewX(-18deg);
+			opacity: 0.95;
+		}
+
+		.grain,
+		.device,
+		.cup {
+			position: absolute;
+			border-radius: 50%;
+		}
+
+		.grain-one {
+			left: 8%;
+			bottom: 18%;
+			width: 52%;
+			height: 26%;
+			background: radial-gradient(circle at 35% 40%, #d1a06a, #7d4a22 62%, #20120b 100%);
+			clip-path: polygon(10% 5%, 85% 0%, 100% 45%, 74% 100%, 14% 95%, 0 45%);
+			opacity: 0.95;
+		}
+
+		.grain-two {
+			left: 31%;
+			bottom: 11%;
+			width: 28%;
+			height: 16%;
+			background: radial-gradient(circle at 35% 40%, #c68647, #613616 70%);
+			clip-path: polygon(0 35%, 50% 0, 100% 35%, 86% 100%, 13% 100%);
+			opacity: 0.8;
+		}
+
+		.device-one {
+			right: 22%;
+			bottom: 23%;
+			width: 12%;
+			height: 20%;
+			background: linear-gradient(180deg, #8f9496, #31383d);
+			clip-path: polygon(35% 0, 65% 0, 83% 100%, 17% 100%);
+		}
+
+		.device-two {
+			right: 10%;
+			bottom: 23%;
+			width: 11%;
+			height: 24%;
+			background: linear-gradient(180deg, #b4b1a8, #61615b);
+			clip-path: polygon(16% 20%, 84% 20%, 70% 100%, 30% 100%);
+		}
+
+		.cup {
+			right: 12%;
+			bottom: 21%;
+			width: 18%;
+			height: 18%;
+			border-radius: 18% 18% 48% 48%;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(204, 214, 220, 0.55));
+			box-shadow: inset 0 -14px 24px rgba(87, 58, 28, 0.35);
+			transform: rotate(5deg);
+		}
+
+		.cup::before {
+			content: '';
+			position: absolute;
+			right: -14%;
+			top: 22%;
+			width: 26%;
+			height: 26%;
+			border: 4px solid rgba(232, 233, 230, 0.75);
+			border-left-color: transparent;
+			border-radius: 50%;
+		}
+
+		.cup::after {
+			content: '';
+			position: absolute;
+			inset: 22% 16% auto;
+			height: 28%;
+			border-radius: 50%;
+			background: radial-gradient(circle, #523624 0, #20140f 100%);
+		}
+
+		.filters {
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			padding: 18px 18px;
+			margin-top: 18px;
+			background: rgba(255, 255, 255, 0.64);
+			border: 1px solid rgba(18, 18, 18, 0.06);
+		}
+
+		.filters-toggle,
+		.chip {
+			border-radius: 10px;
+			font-weight: 700;
+			font-size: 0.75rem;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+		}
+
+		.filters-toggle {
+			border: 0;
+			background: #111;
+			color: white;
+			padding: 12px 14px;
+		}
+
+		.chips {
+			gap: 10px;
+			flex-wrap: wrap;
+		}
+
+		.chip {
+			padding: 10px 14px;
+			background: rgba(18, 18, 18, 0.06);
+			color: rgba(18, 18, 18, 0.72);
+		}
+
+		.view-icons {
+			display: flex;
+			gap: 14px;
+			color: rgba(18, 18, 18, 0.7);
+			font-size: 1rem;
+		}
+
+		.footer {
+			justify-content: space-between;
+			gap: 24px;
+			padding: 36px 8px 18px;
+			align-items: flex-start;
+			flex-wrap: wrap;
+		}
+
+		.footer > div {
+			min-width: 180px;
+		}
+
+		.footer h3,
+		.footer h4 {
+			margin: 0 0 12px;
+			font-family: 'Space Grotesk', sans-serif;
+		}
+
+		.footer p,
+		.footer a,
+		.footer-link-btn {
+			color: rgba(18, 18, 18, 0.72);
+			display: block;
+			margin: 0 0 8px;
+		}
+
+		.footer-link-btn {
+			background: none;
+			border: 0;
+			padding: 0;
+			font: inherit;
+			text-align: left;
+			cursor: pointer;
+			opacity: 0.82;
+		}
+
+		.footer-link-btn:hover {
+			opacity: 1;
+		}
+
+		@media (max-width: 980px) {
+			.hero {
+				grid-template-columns: 1fr;
+			}
+
+			nav {
+				display: none;
+			}
+
+			.topbar-actions {
+				flex-wrap: wrap;
+				justify-content: flex-end;
+			}
+
+			.hero-copy,
+			.hero-visual {
+				min-height: 420px;
+			}
+		}
+
+		@media (max-width: 720px) {
+			.page-shell {
+				width: min(100% - 20px, 1280px);
+				padding-top: 10px;
+			}
+
+			.topbar,
+			.filters,
+			.hero-copy,
+			.hero-visual {
+				border-radius: 20px;
+			}
+
+			.hero-copy,
+			.hero-visual {
+				min-height: auto;
+			}
+
+			.hero-copy {
+				padding: 28px 22px;
+			}
+
+			h1 {
+				font-size: clamp(2.6rem, 15vw, 4.2rem);
+			}
+
+			.filters {
+				align-items: flex-start;
+				flex-direction: column;
+			}
+
+			.view-icons {
+				align-self: flex-end;
+			}
+
+			.footer {
+				padding-inline: 0;
+			}
+		}
+	</style>
 </Layout>

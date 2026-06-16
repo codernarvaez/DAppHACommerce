@@ -140,6 +140,18 @@ class LoteRead(LoteBase):
     created_at: datetime
 
 
+class LoteUpdate(BaseModel):
+    variedad: str | None = Field(default=None, min_length=2, max_length=120)
+    fecha_cosecha: date | None = None
+    peso_kg: Decimal | None = Field(default=None, gt=0)
+    proceso: str | None = Field(default=None, min_length=2, max_length=120)
+    origen_geo: str | None = Field(default=None, min_length=2, max_length=255)
+    estado: EstadoLote | None = None
+    id_trazabilidad_externa: str | None = None
+    datos_trazabilidad: dict[str, Any] | None = None
+    tx_hash: str | None = None
+
+
 class EventoTrazabilidadBase(BaseModel):
     lote_id: UUID = Field(description="Referencia al lote")
     nombre_evento: str = Field(description="Ej: Cosecha, Fermentación, Secado")

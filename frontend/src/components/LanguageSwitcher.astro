@@ -1,0 +1,92 @@
+---
+import { LOCALES, type Locale } from '../lib/i18n';
+
+interface Props {
+	locale: Locale;
+	label: string;
+}
+
+const { locale, label } = Astro.props;
+---
+
+<div class="lang-switcher">
+	<label class="sr-only" for="lang-select">{label}</label>
+	<select id="lang-select" aria-label={label} data-current={locale}>
+		{LOCALES.map((entry) => (
+			<option value={entry.code} selected={entry.code === locale}>
+				{entry.nativeLabel}
+			</option>
+		))}
+	</select>
+	<span class="lang-icon" aria-hidden="true">🌐</span>
+</div>
+
+<script>
+	function hasFunctionalConsent() {
+		const match = document.cookie.match(/(?:^|; )origin_consent=([^;]*)/);
+		if (!match) return false;
+		try {
+			const state = JSON.parse(decodeURIComponent(match[1]));
+			return Boolean(state.functional);
+		} catch {
+			return false;
+		}
+	}
+
+	const select = document.getElementById('lang-select') as HTMLSelectElement | null;
+
+	select?.addEventListener('change', () => {
+		const lang = select.value;
+
+		if (hasFunctionalConsent()) {
+			document.cookie = `locale=${lang};path=/;max-age=31536000;SameSite=Lax`;
+			window.location.reload();
+			return;
+		}
+
+		window.location.href = `${window.location.pathname}?lang=${lang}`;
+	});
+</script>
+
+<style>
+	.lang-switcher {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.lang-switcher select {
+		appearance: none;
+		border: 1px solid rgba(18, 18, 18, 0.12);
+		background: rgba(255, 255, 255, 0.92);
+		color: #121212;
+		border-radius: 999px;
+		padding: 8px 34px 8px 14px;
+		font-size: 0.78rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.lang-switcher select:focus-visible {
+		outline: 2px solid #4e8f7d;
+		outline-offset: 2px;
+	}
+
+	.lang-icon {
+		position: absolute;
+		right: 10px;
+		pointer-events: none;
+		font-size: 0.85rem;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		border: 0;
+	}
+</style>
