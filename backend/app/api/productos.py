@@ -1,65 +1,47 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status
 from typing import List
-from app.models.schemas import ProductoCreate, ProductoRead, ProductoUpdate
-from app.core.database import prisma  # <-- NUEVO: Importamos Prisma
-from app.core.security import obtener_usuario_actual, requerir_roles
+from uuid import UUID
+from app.models.schemas import ProductoRead
+from app.services.blockchain import BlockchainService
 
 router = APIRouter(
     prefix="/api/productos",
     tags=["Productos y Catálogo"]
 )
 
-UsuarioAutenticado = Depends(obtener_usuario_actual)
-SoloProductores = Depends(requerir_roles(["productor", "administrador"]))
-
-@router.post("/", response_model=ProductoRead, status_code=status.HTTP_201_CREATED)
-async def crear_producto(producto: ProductoCreate, usuario_actual: dict = SoloProductores):
-    try:
-        producto_data = producto.model_dump(mode='json')
-        
-        nuevo_producto = await prisma.producto.create(data=producto_data)
-            
-        return nuevo_producto
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
 @router.get("/", response_model=List[ProductoRead])
 async def listar_productos():
+    """
+    Obtiene el catálogo de productos consultando el servicio descentralizado on-chain.
+    """
     try:
-        productos = await prisma.producto.find_many()
+        productos = await BlockchainService.obtener_catalogo_onchain()
         return productos
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al conectar con el nodo RPC de la blockchain."
+        )
 
 @router.get("/{producto_id}", response_model=ProductoRead)
-async def obtener_producto(producto_id: str):
+async def obtener_producto(producto_id: UUID):
+    """
+    Busca los detalles de un producto específico directamente en el Smart Contract mediante su ID.
+    """
     try:
-        producto = await prisma.producto.find_unique(where={"id": producto_id})
+        producto = await BlockchainService.obtener_producto_onchain(producto_id)
         
         if not producto:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El producto solicitado no existe en el registro descentralizado."
+            )
             
         return producto
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-@router.patch("/{producto_id}", response_model=ProductoRead)
-async def actualizar_producto(producto_id: str, producto_actualizado: ProductoUpdate, usuario_actual: dict = SoloProductores):
-    try:
-        update_data = producto_actualizado.model_dump(exclude_unset=True, mode='json')
-        
-        if not update_data:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay datos para actualizar.")
-
-        producto_existente = await prisma.producto.find_unique(where={"id": producto_id})
-        if not producto_existente:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado o no se pudo actualizar.")
-
-        producto = await prisma.producto.update(
-            where={"id": producto_id},
-            data=update_data
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al procesar la lectura del contrato inteligente."
         )
-            
-        return producto
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

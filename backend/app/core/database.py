@@ -3,6 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from supabase import Client, create_client
+from prisma import Prisma
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
@@ -32,3 +33,5 @@ supabase_client: Client = create_client(
     _require_env("SUPABASE_URL"),
     _get_supabase_key(),
 )
+
+prisma = Prisma()

@@ -130,27 +130,12 @@ class LoteBase(BaseModel):
     tx_hash: str | None = Field(default=None, description="Hash de transacción en Polygon")
 
 
-class LoteCreate(LoteBase):
-    pass
-
-
 class LoteRead(LoteBase):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     created_at: datetime
 
-
-class LoteUpdate(BaseModel):
-    variedad: str | None = Field(default=None, min_length=2, max_length=120)
-    fecha_cosecha: date | None = None
-    peso_kg: Decimal | None = Field(default=None, gt=0)
-    proceso: str | None = Field(default=None, min_length=2, max_length=120)
-    origen_geo: str | None = Field(default=None, min_length=2, max_length=255)
-    estado: EstadoLote | None = None
-    id_trazabilidad_externa: str | None = None
-    datos_trazabilidad: dict[str, Any] | None = None
-    tx_hash: str | None = None
-
+    
 
 class EventoTrazabilidadBase(BaseModel):
     lote_id: UUID = Field(description="Referencia al lote")
@@ -179,17 +164,15 @@ class ProductoBase(BaseModel):
     precio_base: Decimal = Field(gt=0, description="Precio base del producto")
     stock_disponible: int = Field(ge=0, description="Cantidad disponible en stock")
     estado: EstadoProducto = Field(description="Estado actual del producto")
+    tx_hash: str | None = Field(default=None, description="Hash de la transacción en la blockchain")
 
 
-class ProductoCreate(ProductoBase):
-    pass
 
 
 class ProductoRead(ProductoBase):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     created_at: datetime
-
 
 # --- E-COMMERCE, SUBASTAS Y PUNTO DE VENTA (POS) ---
 
@@ -202,9 +185,6 @@ class SubastaBase(BaseModel):
     fecha_fin: datetime = Field(description="Fecha y hora de finalización")
     estado: EstadoSubasta = Field(description="Estado actual de la subasta")
 
-
-class SubastaCreate(SubastaBase):
-    pass
 
 
 class SubastaRead(SubastaBase):
@@ -219,10 +199,7 @@ class OfertaBase(BaseModel):
     monto: Decimal = Field(gt=0, description="Monto ofrecido")
     tx_hash: str | None = Field(default=None, description="Firma o Hash en Web3 si aplica")
 
-
-class OfertaCreate(OfertaBase):
-    pass
-
+s
 
 class OfertaRead(OfertaBase):
     model_config = ConfigDict(from_attributes=True)
