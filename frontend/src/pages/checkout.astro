@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PaymentMethods from '../components/checkout/PaymentMethods.astro';
+import OrderSummary from '../components/checkout/OrderSummary.astro';
+import { resolveLocale } from '../lib/i18n';
+
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
+
+const paymentMethods = [
+  { id: 'card', name: 'Tarjeta de Crédito', description: 'Visa, MasterCard, American Express', icon: '💳', fee: '2.5%', available: true },
+  { id: 'crypto', name: 'Criptomonedas', description: 'Bitcoin, Ethereum', icon: '₿', fee: 'Sin comisión', available: true },
+  { id: 'bank', name: 'Transferencia Bancaria', description: 'Transferencia directa a cuenta', icon: '🏦', fee: 'Gratis', available: false },
+  { id: 'paypal', name: 'PayPal', description: 'Pago rápido y seguro con PayPal', icon: '🅿️', fee: '3.5%', available: true },
+];
+
+const cartItems = [
+  { id: '1', name: 'Café Origen', quantity: 2, price: 25.00, image: '' },
+  { id: '2', name: 'Filtro V60', quantity: 1, price: 15.00, image: '' }
+];
+const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+---
+
+<Layout locale={locale} title='Checkout - DApp HA Commerce' description='Pasarela de pagos'>
+  <main style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 40px; align-items: start;">
+      <section>
+        <PaymentMethods methods={paymentMethods} selectedMethod="card" />
+      </section>
+      <aside>
+        <OrderSummary 
+          items={cartItems} 
+          subtotal={subtotal}
+          taxRate={0.21}
+          discount={{ code: 'ORIGIN_24', amount: 10 }}
+        />
+      </aside>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @media (max-width: 768px) {
+    main > div {
+      grid-template-columns: 1fr;
+    }
+    aside {
+      position: static !important;
+      max-height: none !important;
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
