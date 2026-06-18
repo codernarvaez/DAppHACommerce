@@ -1,5 +1,5 @@
 ---
-
+import { Icon } from 'astro-icon/components';
 interface PaymentMethod {
     id: string;
     name: string;
@@ -26,7 +26,9 @@ interface Props {
     <div class="payment-grid">
         <!-- Method: Card -->
         <button class="payment-card" id="btn-card" data-method="card">
-            <div class="payment-icon">💳</div>
+            <div class="payment-icon">
+                <Icon name="card-outline" class="icon"/>
+            </div>
             <div class="payment-info">
                 <h3>TARJETA</h3>
                 <p class="payment-description">Crédito o Débito</p>
@@ -35,7 +37,9 @@ interface Props {
 
         <!-- Method: Bank Transfer -->
         <button class="payment-card" id="btn-bank" data-method="bank">
-            <div class="payment-icon">🏦</div>
+            <div class="payment-icon">
+                <Icon name="bank" class="icon"/>
+            </div>
             <div class="payment-info">
                 <h3>TRANSFERENCIA</h3>
                 <p class="payment-description">Banca Nacional</p>
@@ -44,7 +48,9 @@ interface Props {
 
         <!-- Method: Web3 -->
         <button class="payment-card" id="btn-web3" data-method="web3">
-            <div class="payment-icon">₿</div>
+            <div class="payment-icon">
+                <Icon name="bitcoin" class="icon"/>
+            </div>
             <div class="payment-info">
                 <h3>WEB3 / DEX</h3>
                 <p class="payment-description">Crypto Wallet</p>
@@ -84,7 +90,9 @@ interface Props {
                         class="form-input"
                         maxlength="19"
                     />
-                    <span class="input-icon">credit_card</span>
+                    <span class="input-icon">
+                        <Icon name="card-outline" class="icon"/>
+                    </span>
                 </div>
             </div>
 
@@ -160,7 +168,9 @@ interface Props {
                 Soportamos MetaMask, WalletConnect y Phantom. Transacción nativa en USDC, USDT o ETH.
             </p>
             <button class="web3-button">
-                <span class="web3-button-icon">account_balance_wallet</span>
+                <span class="web3-button-icon">
+                    <Icon name="wallet" class="icon"/>
+                </span>
                 CONNECT WALLET
             </button>
         </div>
@@ -169,7 +179,9 @@ interface Props {
 	<!-- Payment Confirmation -->
 	<div class="payment-footer">
 		<div class="payment-security">
-			<span class="security-icon">verified_user</span>
+			<span class="security-icon">
+                <Icon name="verified-user" class="icon"/>
+            </span>
 			<span class="security-text">CONEXIÓN CIFRADA DE 256 BITS</span>
 		</div>
 		<button class="payment-confirm-btn">
@@ -265,6 +277,12 @@ interface Props {
 		border-color: var(--color-on-surface);
 		background:  rgba(255, 255, 255, 0.72);
 	}
+
+    .icon {
+        display: flex;
+        width: 30px;
+        height: 30px;
+    }
 
     /* Form Inputs */
     .form-grid {
