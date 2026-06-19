@@ -1,0 +1,94 @@
+---
+// Datos simulados para comprobar interfaz
+const steps = [
+  {
+    title: "Cosecha & Selección",
+    date: "OCT 12, 2023",
+    status: "COMPLETADO",
+    desc: "Recolección manual selectiva de cerezas con 22-24° Brix. Limpieza por flotación completada."
+  },
+  {
+    title: "Fermentación anaeróbica",
+    date: "OCT 15, 2023",
+    status: "COMPLETADO",
+    desc: "Fermentación de 48 horas en tanques sellados de acero inoxidable. Monitoreo de la estabilidad del pH."
+  },
+  {
+    title: "Secado al sol",
+    date: "OCT 18, 2023",
+    status: "COMPLETADO",
+    desc: "Secado lento en camas africanas elevadas bajo sombra controlada."
+  }
+];
+---
+
+<div class="chronology-container">
+  <h2>Cronología del Producto</h2>
+  <div class="timeline">
+    {steps.map((step) => (
+      <div class="timeline-item">
+        <div class="timeline-badge"></div>
+        <div class="timeline-content">
+          <span class="status">{step.status} • {step.date}</span>
+          <h3>{step.title}</h3>
+          <p>{step.desc}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+
+  .chronology-container {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 32px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #111827;
+  }
+  .timeline {
+    position: relative;
+    padding-left: 24px;
+    border-left: 2px solid #e5e7eb;
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .timeline-item:last-child {
+    margin-bottom: 0;
+  }
+  .timeline-badge {
+    position: absolute;
+    left: -31px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #000;
+    border: 2px solid #fff;
+  }
+  .status {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+  .timeline-content h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 4px 0;
+    color: #111827;
+  }
+  .timeline-content p {
+    font-size: 0.95rem;
+    color: #4b5563;
+  }
+</style>

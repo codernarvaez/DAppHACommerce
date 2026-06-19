@@ -1,0 +1,214 @@
+---
+export interface Step {
+  label: string;
+  url: string;
+}
+
+export interface Props {
+  steps: Step[];
+  currentStep: number; // Basado en índice 1
+}
+
+const { steps, currentStep } = Astro.props;
+---
+
+<div class="radio-inputs">
+  {steps.map((step, index) => {
+    const stepNumber = index + 1;
+    const isCurrent = stepNumber === currentStep;
+    const isPast = stepNumber < currentStep;
+
+    return (
+      <div class="radio">
+        {/* Usamos un enlace si es un paso pasado para poder regresar, o un span si es actual/futuro */}
+        {isPast ? (
+          <a href={step.url} class="name is-link">
+            <span class="step-num">{String(stepNumber).padStart(2, '0')}</span> {step.label}
+          </a>
+        ) : (
+          <div class={`name ${isCurrent ? 'is-active' : 'is-disabled'}`}>
+            <span class="step-num">{String(stepNumber).padStart(2, '0')}</span> {step.label}
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+
+
+<style>
+  /* Contenedor Base Estilo Uiverse.io */
+  .radio-inputs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #e6e6e6, #ffffff);
+    box-sizing: border-box;
+    box-shadow:
+      5px 5px 15px rgba(0, 0, 0, 0.15),
+      -5px -5px 15px rgba(255, 255, 255, 0.8);
+    padding: 0.5rem;
+    width: 100%;
+    max-width: 750px;
+    font-size: 14px;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-family: 'Manrope', 'Inter', sans-serif;
+  }
+
+  .radio-inputs .radio {
+    flex: 1 1 auto;
+    text-align: center;
+    position: relative;
+  }
+
+  /* Estilo por defecto de las pestañas (No seleccionadas / Futuras) */
+  .radio-inputs .radio .name {
+    display: flex;
+    text-decoration: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.7rem;
+    border: none;
+    padding: 0.7rem 0;
+    color: #2d3748;
+    font-weight: 500;
+    background: linear-gradient(145deg, #ffffff, #e6e6e6);
+    box-shadow:
+      3px 3px 6px rgba(0, 0, 0, 0.1),
+      -3px -3px 6px rgba(255, 255, 255, 0.7);
+    transition: all 0.2s ease;
+    overflow: hidden;
+    gap: 0.35rem;
+  }
+
+  .step-num {
+    font-weight: 700;
+    opacity: 0.6;
+  }
+
+  /* 1. EFECTO: COMPONENTE SELECCIONADO (Paso Actual) */
+  .radio-inputs .radio .name.is-active {
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow:
+      inset 2px 2px 5px rgba(0, 0, 0, 0.2),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.1),
+      3px 3px 8px rgba(59, 130, 246, 0.3);
+    transform: translateY(2px);
+    animation: select 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible;
+  }
+
+  .radio-inputs .radio .name.is-active .step-num {
+    color: #ffffff;
+    opacity: 0.9;
+  }
+
+  /* 2. EFECTO HOVER: Pasar el mouse por encima de los componentes habilitados (is-link) */
+  .radio-inputs .radio:hover .name.is-link {
+    background: linear-gradient(145deg, #f0f0f0, #ffffff);
+    transform: translateY(-1px);
+    box-shadow:
+      4px 4px 8px rgba(0, 0, 0, 0.1),
+      -4px -4px 8px rgba(255, 255, 255, 0.8);
+    color: #2563eb; /* Resalte sutil en azul al pasar el mouse */
+  }
+
+  /* Mantener el hundimiento si se hace hover sobre el elemento activo */
+  .radio-inputs .radio:hover .name.is-active {
+    transform: translateY(2px);
+  }
+
+  /* Pasos futuros deshabilitados */
+  .radio-inputs .radio .name.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #e6e6e6;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* 3. EFECTO DE ANIMACIONES Y PARTÍCULAS DEL COMPONENTE ACTIVO */
+  @keyframes select {
+    0% { transform: scale(0.95) translateY(2px); }
+    50% { transform: scale(1.05) translateY(-1px); }
+    100% { transform: scale(1) translateY(2px); }
+  }
+
+  /* Partículas superiores e inferiores */
+  .radio-inputs .radio .name.is-active::before,
+  .radio-inputs .radio .name.is-active::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .radio-inputs .radio .name.is-active::before {
+    background: #60a5fa;
+    box-shadow:
+      0 0 6px #60a5fa,
+      10px -10px 0 #60a5fa,
+      -10px -10px 0 #60a5fa;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: multi-particles-top 0.8s ease-out forwards;
+  }
+
+  .radio-inputs .radio .name.is-active::after {
+    background: #93c5fd;
+    box-shadow:
+      0 0 8px #93c5fd,
+      10px 10px 0 #93c5fd,
+      -10px 10px 0 #93c5fd;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: multi-particles-bottom 0.8s ease-out forwards;
+  }
+
+  @keyframes multi-particles-top {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    40% { opacity: 0.8; }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px) scale(0);
+      box-shadow: 0 0 6px transparent, 20px -20px 0 transparent, -20px -20px 0 transparent;
+    }
+  }
+
+  @keyframes multi-particles-bottom {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    40% { opacity: 0.8; }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px) scale(0);
+      box-shadow: 0 0 8px transparent, 20px 20px 0 transparent, -20px 20px 0 transparent;
+    }
+  }
+
+  /* Borde brillante animado en el elemento activo */
+  .radio-inputs .radio .name.is-active::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(45deg, rgba(59, 130, 246, 0.5), rgba(37, 99, 235, 0.5));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: border-glow 1.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes border-glow {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+</style>

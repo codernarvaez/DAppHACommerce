@@ -50,7 +50,9 @@ const { items, error, apiOnline, m } = Astro.props;
 					</div>
 					<a
 						class="mini-button"
-						href={product.subastaId ? `#auction-${product.subastaId}` : `#product-${product.id}`}
+						{/* href={product.subastaId ? `#auction-${product.subastaId}` : `#product-${product.id}`} */}
+						href="/product-detail"
+						{/* href={`/product-detail?title=${encodeURIComponent(product.title)}&description=${encodeURIComponent(product.description)}&price=${encodeURIComponent(product.price)}&stock=${encodeURIComponent(product.stock)}`} */}
 						aria-label={interpolate(m.market.viewProduct, { title: product.title })}
 					>
 						↗

@@ -1,0 +1,110 @@
+---
+interface Props {
+  price: string;
+  stock: string;
+}
+
+const { price, stock } = Astro.props;
+---
+
+<div class="purchase-card">
+  <div class="price-section">
+    <span class="label">Precio</span>
+    <div class="price-val">{price || "$0.00"}</div>
+  </div>
+
+  <div class="meta-row">
+    <div>
+      <span class="label">Peso</span>
+      <strong>120 kg</strong>
+    </div>
+    <div>
+      <span class="label">Stock</span>
+      <strong>{stock || "0 u."}</strong>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <div>
+      <span class="label">Varietal</span>
+      <strong>Geisha</strong>
+    </div>
+  </div>
+
+  <a href="/checkout" class="btn-buy">
+    Comprar
+  </a>
+  
+  <div class="producer-info">
+    <div class="avatar">👨‍🌾</div>
+    <div>
+      <span class="label">Productor</span>
+      <strong>Carlos Eduardo Mendez</strong>
+    </div>
+  </div>
+</div>
+
+<style>
+  .purchase-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .price-section {
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+  .price-val {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111827;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.95rem;
+  }
+  .btn-buy {
+    display: block;
+    text-align: center;
+    background: #000000;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: 6px;
+    margin-top: 20px;
+    text-transform: uppercase;
+    transition: background 0.2s;
+  }
+  .btn-buy:hover {
+    background: #1f2937;
+  }
+  .producer-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f3f4f6;
+  }
+  .avatar {
+    font-size: 1.5rem;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 50%;
+  }
+</style>

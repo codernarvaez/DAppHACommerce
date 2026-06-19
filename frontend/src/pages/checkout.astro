@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import PaymentMethods from '../components/checkout/PaymentMethods.astro';
 import OrderSummary from '../components/checkout/OrderSummary.astro';
+import BreadcrumbRadio from '../components/BreadcrumbRadio.astro';
 import { resolveLocale } from '../lib/i18n';
 
 const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
@@ -18,10 +19,16 @@ const cartItems = [
   { id: '2', name: 'Filtro V60', quantity: 1, price: 15.00, image: '' }
 ];
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+const checkoutSteps = [
+  { label: 'DETALLE', url: '/product-detail' },
+  { label: 'PAGO', url: '/checkout' },
+];
 ---
 
 <Layout locale={locale} title='Checkout - DApp HA Commerce' description='Pasarela de pagos'>
   <main style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+    <BreadcrumbRadio steps={checkoutSteps} currentStep={2} />
     <div style="display: grid; grid-template-columns: 1fr 350px; gap: 40px; align-items: start;">
       <section>
         <PaymentMethods methods={paymentMethods} selectedMethod="card" />
