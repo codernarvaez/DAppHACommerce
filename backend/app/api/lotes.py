@@ -1,72 +1,48 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status
 from typing import List
-from app.models.schemas import LoteCreate, LoteRead, LoteUpdate 
-from app.core.utils import generar_hash_lote
-from app.core.database import supabase_client
-from app.core.security import obtener_usuario_actual, requerir_roles
+from uuid import UUID
+from app.models.schemas import LoteRead 
+from app.services.blockchain import BlockchainService
 
 router = APIRouter(
     prefix="/api/lotes",
-    tags=["Lotes y Trazabilidad"]
+    tags=["Lotes y Trazabilidad (Simulador Web3)"]
 )
 
 
-UsuarioAutenticado = Depends(obtener_usuario_actual)
-SoloProductores = Depends(requerir_roles(["productor", "administrador"]))
-
-
-@router.post("/", response_model=LoteRead, status_code=status.HTTP_201_CREATED)
-async def registrar_lote(lote: LoteCreate, usuario_actual: dict = SoloProductores):
-    try:
-        lote_data = lote.model_dump(mode='json')
-        lote_hash = generar_hash_lote(lote_data)
-        lote_data["tx_hash"] = lote_hash 
-
-        response = supabase_client.table("lotes").insert(lote_data).execute()
-
-        if not response.data:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se pudo crear el lote.")
-            
-        return response.data[0]
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
 @router.get("/", response_model=List[LoteRead])
-async def listar_lotes(usuario_actual: dict = UsuarioAutenticado):
+async def listar_lotes():
+    """
+    Obtiene el listado de lotes trazados consultando el registro on-chain.
+    """
     try:
-        response = supabase_client.table("lotes").select("*").execute()
-        return response.data
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+        lotes = await BlockchainService.obtener_lotes_onchain()
+        return lotes
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Error al leer los lotes desde la blockchain."
+        )
 
 @router.get("/{lote_id}", response_model=LoteRead)
-async def obtener_lote(lote_id: str, usuario_actual: dict = UsuarioAutenticado):
+async def obtener_lote(lote_id: UUID):
+    """
+    Obtiene la información de trazabilidad de un lote específico desde el Smart Contract.
+    """
     try:
-        response = supabase_client.table("lotes").select("*").eq("id", lote_id).execute()
+        lote = await BlockchainService.obtener_lote_onchain(lote_id)
         
-        if not response.data:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado.")
+        if not lote:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Lote no encontrado en el registro descentralizado."
+            )
             
-        return response.data[0]
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.patch("/{lote_id}", response_model=LoteRead)
-async def actualizar_lote(lote_id: str, lote_actualizado: LoteUpdate, usuario_actual: dict = SoloProductores):
-    try:
-        update_data = lote_actualizado.model_dump(exclude_unset=True, mode='json')
-        
-        if not update_data:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay datos para actualizar.")
-
-        response = supabase_client.table("lotes").update(update_data).eq("id", lote_id).execute()
-        
-        if not response.data:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado o no se pudo actualizar.")
-            
-        return response.data[0]
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        return lote
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Error al procesar la lectura del lote."
+        )
