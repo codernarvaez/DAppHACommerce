@@ -1,8 +1,9 @@
 ---
-import type { Locale } from '../lib/i18n';
+import * as i18nModule from '../lib/i18n';
 import type { PrivacyMessages } from '../lib/i18n/privacy-messages';
 import CookieConsent from '../components/privacy/CookieConsent.astro';
 import { hasConsentDecision } from '../lib/privacy/consent';
+import Topbar from '../components/Topbar.astro';
 
 interface Props {
 	locale: Locale;
@@ -13,6 +14,10 @@ interface Props {
 }
 
 const { locale, title, description, pm, consent = null } = Astro.props;
+const { m } = i18nModule.getI18n(locale);
+// PARA PRUEBA, CAMBIAR
+const apiOnline = true; 
+const apiError = null;
 ---
 
 <!doctype html>
@@ -31,8 +36,13 @@ const { locale, title, description, pm, consent = null } = Astro.props;
 		/>
 	</head>
 	<body>
-		<slot />
+		<div class="page-shell">
+      		{/* Header global*/}
+      		<Topbar locale={locale} m={m} apiOnline={apiOnline} apiError={apiError} />
+      
+      	<slot />
 		{pm && <CookieConsent locale={locale} pm={pm} hasConsent={hasConsentDecision(consent)} />}
+    	</div>
 	</body>
 </html>
 

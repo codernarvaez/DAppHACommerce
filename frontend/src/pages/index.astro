@@ -6,6 +6,7 @@ import MarketGrid from '../components/MarketGrid.astro';
 import AuctionStrip from '../components/AuctionStrip.astro';
 import ApiStatus from '../components/ApiStatus.astro';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import BreadcrumbRadio from '../components/BreadcrumbRadio.astro';
 import { getCatalogData } from '../lib/catalog';
 import { allowsCategory } from '../lib/privacy/consent';
 import {
@@ -30,6 +31,97 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m, pm } = getI18n(locale);
 const catalog = await getCatalogData(locale);
 
+// Simulación de Backend (borrar despues hasta linea 122)===
+const mockBackendResponse = [
+	{
+		id: crypto.randomUUID(),
+		nombre: "Café Tostado Origen Loja - Altura",
+		descripcion: "Café de especialidad con notas a chocolate y acidez cítrica.",
+		categoria: "Grano Tostado",
+		imagenes: ["/imagenes/cafe-loja-1.jpg"],
+		precio_base: 15.50,
+		stock_disponible: 45,
+		estado: "publicado",
+		created_at: new Date().toISOString()
+	},
+	{
+		id: crypto.randomUUID(),
+		nombre: "Café Molido Comercial",
+		descripcion: "Café estándar para el consumo diario y compartir en familia.",
+		categoria: "Molido",
+		imagenes: ["/imagenes/cafe-molido.jpg"],
+		precio_base: 5.75,
+		stock_disponible: 120,
+		estado: "borrador",
+		created_at: new Date().toISOString()
+	},
+	{
+		id: crypto.randomUUID(),
+		nombre: "Café Especialidad Geisha - Proceso Natural",
+		descripcion: "Perfil exótico con notas a jazmín, fresa y un final afrutado muy marcado. Tueste ligero.",
+		categoria: "Grano Tostado",
+		imagenes: ["/imagenes/cafe-geisha-1.jpg"],
+		precio_base: 28.00,
+		stock_disponible: 15,
+		estado: "publicado",
+		created_at: new Date().toISOString()
+	},
+	{
+		id: crypto.randomUUID(),
+		nombre: "Café Lavado Vilcabamba - Tueste Medio",
+		descripcion: "Cuerpo balanceado con un dulzor intenso a panela y acidez brillante a manzana verde.",
+		categoria: "Grano Tostado",
+		imagenes: ["/imagenes/cafe-vilca.jpg", "/imagenes/cafe-vilca-2.jpg"],
+		precio_base: 12.50,
+		stock_disponible: 85,
+		estado: "publicado",
+		created_at: new Date().toISOString()
+	},
+	/*{
+		id: crypto.randomUUID(),
+		nombre: "Lote Café Verde - Altura Puyango",
+		descripcion: "Grano crudo seleccionado (humedad 11%), listo para tostadurías. Puntaje en taza: 86 pts.",
+		categoria: "Grano Verde",
+		imagenes: ["/imagenes/verde-puyango.jpg"],
+		precio_base: 8.25,
+		stock_disponible: 250,
+		estado: "borrador",
+		created_at: new Date().toISOString()
+	},
+	{
+		id: crypto.randomUUID(),
+		nombre: "Cáscara de Café (Para Infusión)",
+		descripcion: "Pulpa de café deshidratada bajo sombra. Produce una bebida dulce y refrescante rica en antioxidantes.",
+		categoria: "Subproducto",
+		imagenes: ["/imagenes/cascara-cafe.jpg"],
+		precio_base: 4.50,
+		stock_disponible: 40,
+		estado: "publicado",
+		created_at: new Date().toISOString()
+	}*/
+];
+
+// Se adapta el formato al de MarketItem que se espera en el componente
+const simulatedItems = mockBackendResponse.map((prod) => ({
+	id: prod.id,
+	title: prod.nombre,
+	description: prod.descripcion || '',
+	price: `$${Number(prod.precio_base).toFixed(2)}`,
+	priceLabel: m.market?.priceLabel || "Precio",
+	stock: prod.stock_disponible,
+	origin: "Loja, Ecuador", 
+	label: prod.categoria,
+	// Asignamos una de las clases de gradiente que tienes en tu CSS de MarketGrid
+	accent: prod.categoria === "Grano Tostado" ? "from-ruby-500" : "from-slate-700",
+	subastaId: null,
+}));
+
+// Se sobreescribe para forzar la simulación
+catalog.items = simulatedItems;
+catalog.error = undefined;
+catalog.apiOnline = true;
+
+
 const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];
 ---
 
@@ -40,25 +132,8 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 	pm={pm}
 	consent={consent}
 >
-	<main class="page-shell">
-		<header class="topbar">
-			<div class="brand">
-				<span class="menu">☰</span>
-				<span>ORIGIN TECH</span>
-			</div>
-			<nav>
-				<a href="#market">{m.nav.market}</a>
-				<a href="#auctions">{m.nav.auctions}</a>
-				<a href="#wallet">{m.nav.wallet}</a>
-				<a href="#profile">{m.nav.profile}</a>
-			</nav>
-			<div class="topbar-actions">
-				<LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
-				<ApiStatus online={catalog.apiOnline && !catalog.error} m={m} />
-				<div class="icon-badge">⌂</div>
-			</div>
-		</header>
 
+	<main class="page-shell">
 		<section class="hero">
 			<div class="hero-copy">
 				<p class="eyebrow">{m.hero.eyebrow}</p>

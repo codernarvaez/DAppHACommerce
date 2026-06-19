@@ -1,0 +1,110 @@
+---
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import ApiStatus from './ApiStatus.astro';
+import { getCatalogData } from '../lib/catalog';
+
+interface Props {
+  locale: string;
+  m: any;
+  apiOnline: boolean;
+  apiError: any;
+}
+
+const { locale, m, apiOnline, apiError } = Astro.props;
+---
+
+<header class="topbar">
+  <div class="brand">
+    <span class="menu">☰</span>
+    <span>ORIGIN TECH</span>
+  </div>
+  <nav>
+    <a href="/#market">{m.nav.market}</a>
+    <a href="/#auctions">{m.nav.auctions}</a>
+    <a href="/#wallet">{m.nav.wallet}</a>
+    <a href="/#profile">{m.nav.profile}</a>
+  </nav>
+  <div class="topbar-actions">
+    <LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
+    <ApiStatus online={apiOnline && !apiError} m={m} />
+    <div class="icon-badge">⌂</div>
+  </div>
+</header>
+
+<style>
+  .topbar {
+    display: flex;
+    position: sticky;
+    top: 16px;
+    z-index: 100;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(18, 18, 18, 0.08);
+    box-shadow: 0 14px 35px rgba(18, 18, 18, 0.08);
+    border-radius: 24px;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .brand, .topbar-actions, nav {
+    display: flex;
+  }
+
+  .topbar-actions {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand {
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    color: #121212;
+  }
+
+  .menu, .icon-badge {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: #111;
+    color: white;
+    font-size: 0.9rem;
+  }
+
+  nav {
+    gap: 28px;
+    font-size: 0.92rem;
+  }
+
+  nav a {
+    color: #121212;
+    text-decoration: none;
+    opacity: 0.82;
+  }
+
+  nav a:hover {
+    opacity: 1;
+  }
+
+  @media (max-width: 980px) {
+    nav {
+      display: none;
+    }
+    .topbar-actions {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .topbar {
+      border-radius: 20px;
+    }
+  }
+</style>
