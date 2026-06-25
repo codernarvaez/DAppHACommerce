@@ -3,9 +3,16 @@ import Layout from '../layouts/Layout.astro';
 import BreadcrumbRadio from '../components/BreadcrumbRadio.astro';
 import PurchasePanel from '../components/product-detail/PurchasePanel.astro';
 import ProductionChronology from '../components/product-detail/ProductionChronology.astro';
-import { resolveLocale } from '../lib/i18n';
 
-const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
+import { 
+    getI18n,
+    resolveLocale,
+    readConsent 
+} from '../lib/i18n';
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m } = getI18n(locale);
 
 // Capturar parámetros URL dinámicos enviados desde el index
 const title = Astro.url.searchParams.get('title') || 'Café Tostado Origen Loja - Altura';
@@ -14,7 +21,7 @@ const price = Astro.url.searchParams.get('price') || '$15.50';
 const stock = Astro.url.searchParams.get('stock') || '45 u.';
 
 const checkoutSteps = [
-  { label: 'DETALLE', url: '/product-detail' },
+  { label: m.checkoutSteps.detail, url: '/product-detail' },
 
 ];
 ---

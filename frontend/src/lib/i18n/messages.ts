@@ -1,6 +1,6 @@
 import type { Locale } from './locales';
 
-const es = {
+export const es = {
 	meta: {
 		title: 'Origin Tech | Ecosistema de Comercio Especializado',
 		description:
@@ -90,6 +90,23 @@ const es = {
 		Cacao: 'Cacao',
 		Specialty: 'Especialidad',
 	},
+	productDetail: {
+		chronology: 'Cronología del Producto',
+		purchase: {
+			price: 'Precio',
+			weight: 'Peso',
+			stock: 'Stock',
+			varietal: 'Varietal',
+			buy: 'Comprar',
+		},
+		producerInfo: {
+			producer: 'Productor',
+		}
+	},
+	checkoutSteps: {
+		detail: 'DETALLE',
+		pay: 'PAGO',
+	},
 	checkout: {
 		title: 'Checkout - DApp HA Commerce',
 		description: 'Pasarela de pagos',
@@ -123,7 +140,7 @@ const es = {
 			},
 			web3: {
 				title:'Connect your Wallet',
-				descripcion: 'Soportamos MetaMask, WalletConnect y Phantom. Transacción nativa en USDC, USDT o ETH.',
+				description: 'Soportamos MetaMask, WalletConnect y Phantom. Transacción nativa en USDC, USDT o ETH.',
 			},
 		},
 		orderSummary: {
@@ -140,9 +157,9 @@ const es = {
 		},
 		security: 'CONEXIÓN CIFRADA DE 256 BITS'
 	}
-} as const;
+};
 
-const en: typeof es = {
+export const en: typeof es = {
 	meta: {
 		title: 'Origin Tech | Specialty Trade Ecosystem',
 		description:
@@ -231,6 +248,23 @@ const en: typeof es = {
 		Cacao: 'Cacao',
 		Specialty: 'Specialty',
 	},
+	productDetail: {
+		chronology: 'Product Timeline',
+		purchase: {
+			price: 'Price',
+			weight: 'Weight',
+			stock: 'Stock',
+			varietal: 'Varietal',
+			buy: 'Buy',
+		},
+		producerInfo: {
+			producer: 'Producer',
+		}
+	},	
+	checkoutSteps: {
+		detail: 'DETAIL',
+		pay: 'PAYMENT',
+	},	
 	checkout: {
 		title: 'Checkout - DApp HA Commerce',
 		description: 'Payment Gateway',
@@ -264,7 +298,7 @@ const en: typeof es = {
 			},
 			web3: {
 				title: 'Connect your Wallet',
-				descripcion: 'We support MetaMask, WalletConnect and Phantom. Native transactions in USDC, USDT or ETH.',
+				description: 'We support MetaMask, WalletConnect and Phantom. Native transactions in USDC, USDT or ETH.',
 			},
 		},
 		orderSummary: {
@@ -283,7 +317,7 @@ const en: typeof es = {
 	}
 };
 
-const zh: typeof es = {
+export const zh: typeof es = {
 	meta: {
 		title: 'Origin Tech | 专业贸易生态系统',
 		description: '可追溯咖啡和可可批次的一产地直采市场，支持实时拍卖。',
@@ -369,6 +403,23 @@ const zh: typeof es = {
 		Cacao: '可可',
 		Specialty: '精品',
 	},
+	productDetail: {
+		chronology: '产品时间线',
+		purchase: {
+			price: '价格',
+			weight: '重量',
+			stock: '库存',
+			varietal: '品种',
+			buy: '购买',
+		},
+		producerInfo: {
+			producer: '生产商',
+		}
+	},	
+	checkoutSteps: {
+		detail: '详情',
+		pay: '支付',
+	},	
 	checkout: {
 		title: '结账 - DApp HA Commerce',
 		description: '支付网关',
@@ -421,7 +472,7 @@ const zh: typeof es = {
 	}
 };
 
-const fr: typeof es = {
+export const fr: typeof es = {
 	meta: {
 		title: 'Origin Tech | Écosystème de commerce spécialisé',
 		description:
@@ -512,6 +563,23 @@ const fr: typeof es = {
 		Cacao: 'Cacao',
 		Specialty: 'Spécialité',
 	},
+	productDetail: {
+		chronology: 'Chronologie du produit',
+		purchase: {
+			price: 'Prix',
+			weight: 'Poids',
+			stock: 'Stock',
+			varietal: 'Variété',
+			buy: 'Acheter',
+		},
+		producerInfo: {
+			producer: 'Producteur',
+		}
+	},	
+	checkoutSteps: {
+		detail: 'DÉTAILS',
+		pay: 'PAIEMENT',
+	},	
 	checkout: {
 		title: 'Paiement - DApp HA Commerce',
 		description: 'Passerelle de paiement',
@@ -545,7 +613,7 @@ const fr: typeof es = {
 			},
 			web3: {
 				title: 'Connectez votre portefeuille',
-				descripcion: 'Nous prenons en charge MetaMask, WalletConnect et Phantom. Transactions natives en USDC, USDT ou ETH.',
+				description: 'Nous prenons en charge MetaMask, WalletConnect et Phantom. Transactions natives en USDC, USDT ou ETH.',
 			},
 		},
 		orderSummary: {
@@ -564,7 +632,170 @@ const fr: typeof es = {
 	}
 };
 
-export const messages = { es, en, zh, fr } as const;
+export const ru: typeof es = {
+	meta: {
+		title: 'Origin Tech | Экосистема специализированной торговли',
+		description:
+			'Маркетплейс прямых поставок с места происхождения для отслеживаемых партий кофе и какао с живыми аукционами.',
+	},
+	lang: {
+		switcherLabel: 'Выбрать язык',
+	},
+	nav: {
+		market: 'Маркетплейс',
+		auctions: 'Аукционы',
+		wallet: 'Кошелёк',
+		profile: 'Профиль',
+	},
+	hero: {
+		eyebrow: 'ПРЕМИАЛЬНЫЙ УРОЖАЙ 2024',
+		title: 'Экосистема специализированной торговли',
+		lede:
+			'Маркетплейс прямых поставок с места происхождения для отслеживаемых партий кофе и какао с прозрачной проверкой, живыми аукционами и профессиональными закупками.',
+		browse: 'Просмотреть каталог',
+		auctions: 'Живые аукционы',
+	},
+	filters: {
+		aria: 'Фильтры',
+		toggle: 'Фильтры',
+		typeAll: 'Тип: Все',
+		origin: 'Происхождение',
+		score: 'Оценка: 85+',
+		process: 'Обработка',
+	},
+	market: {
+		catalogErrorTitle: 'Каталог недоступен.',
+		catalogErrorHint: 'Убедитесь, что backend запущен на порту 8000.',
+		emptyTitle: 'Нет опубликованных товаров.',
+		emptyBody: 'Зарегистрируйте партии и товары через API, чтобы увидеть каталог в реальном времени.',
+		openApi: 'Открыть документацию API',
+		stock: '{count} шт.',
+		viewProduct: 'Просмотреть {title}',
+		labelAuction: 'АУКЦИОН',
+		labelDirect: 'ПРЯМАЯ ПОКУПКА',
+		priceBid: 'Текущая ставка',
+		priceDirect: 'Прямая цена',
+		defaultDescription: 'Отслеживаемая партия, доступная на маркетплейсе.',
+	},
+	auction: {
+		eyebrow: 'Проверяемая прозрачность.',
+		body:
+			'Каталог подключён к API FastAPI в реальном времени. Товары и активные аукционы синхронизируются из Supabase при каждом посещении.',
+		productsInCatalog: 'Товаров в каталоге',
+		activeAuctions: 'Активные аукционы',
+		liveSection: 'Живые аукционы',
+		liveSectionBody: 'Цены и сроки обновляются напрямую из backend.',
+		currentBid: 'Текущая ставка',
+		initial: 'Начальная',
+		closes: 'Завершается: {date}',
+		ended: 'Завершён',
+		productFallback: 'Товар на аукционе',
+		status: {
+			activa: 'Активен',
+			programada: 'Запланирован',
+			finalizada: 'Завершён',
+			cancelada: 'Отменён',
+		},
+	},
+	api: {
+		online: 'API подключён',
+		offline: 'API недоступен',
+	},
+	footer: {
+		tagline:
+			'Цифровая инфраструктура для следующего поколения специализированной сельскохозяйственной торговли.',
+		platform: 'Платформа',
+		marketplace: 'Маркетплейс',
+		traceability: 'Центр прослеживаемости',
+		sustainability: 'Устойчивое развитие',
+		resources: 'Ресурсы',
+		apiReference: 'Справочник API',
+		documentation: 'Документация',
+		privacy: 'Политика конфиденциальности',
+	},
+	errors: {
+		backendOffline:
+			'Не удалось подключиться к backend. Проверьте, что API запущен.',
+		catalogUnknown: 'Неизвестная ошибка при загрузке каталога.',
+	},
+	categories: {
+		Café: 'Кофе',
+		Cacao: 'Какао',
+		Specialty: 'Спешелти',
+	},
+	productDetail: {
+		chronology: 'Хронология продукта',
+		purchase: {
+			price: 'Цена',
+			weight: 'Вес',
+			stock: 'Запас',
+			varietal: 'Сорт',
+			buy: 'Купить',
+		},
+		producerInfo: {
+			producer: 'Производитель',
+		}
+	},
+	checkoutSteps: {
+		detail: 'ДЕТАЛИ',
+		pay: 'ОПЛАТА',
+	},
+	checkout: {
+		title: 'Оформление заказа — DApp HA Commerce',
+		description: 'Платёжный шлюз',
+		paymentMethods: {
+			title: 'Расширенные способы оплаты',
+			subtitle:
+				'Выберите предпочтительный способ оплаты для безопасной обработки транзакции.',
+			card: 'КАРТА',
+			cardDesc: 'Кредитная или дебетовая карта',
+			bank: 'БАНКОВСКИЙ ПЕРЕВОД',
+			bankDesc: 'Национальная банковская система',
+			crypto: 'WEB3 / DEX',
+			cryptoDesc: 'Криптокошелёк',
+		},
+		paymentForms: {
+			card: {
+				title: 'Данные карты',
+				cardHolder: 'ДЕРЖАТЕЛЬ КАРТЫ',
+				cardHolderPlaceholder: 'ПОЛНОЕ ИМЯ',
+				cardNumber: 'НОМЕР КАРТЫ',
+				cardExpiry: 'СРОК ДЕЙСТВИЯ',
+				cardCvc: 'CVC / CVV',
+				saveCard: 'Сохранить эту карту для будущих покупок.',
+			},
+			bank: {
+				bankFormSubtitle: 'Банковский перевод',
+				label: 'БАНК',
+				account: 'СЧЁТ (IBAN)',
+				reference: 'НАЗНАЧЕНИЕ ПЛАТЕЖА',
+				note: 'Примечание:',
+				noteInfo:
+					'Заказ будет обработан после подтверждения поступления средств (примерно 24–48 часов).',
+			},
+			web3: {
+				title: 'Подключите кошелёк',
+				description:
+					'Поддерживаются MetaMask, WalletConnect и Phantom. Нативные транзакции в USDC, USDT или ETH.',
+			},
+		},
+		orderSummary: {
+			title: 'СВОДКА ЗАКАЗА',
+			subtotal: 'Промежуточный итог',
+			tax: 'Налог (НДС {rate}%)',
+			discount: 'Скидка ({code})',
+			total: 'ИТОГО',
+			itemQty: 'КОЛ-ВО: {qty}',
+		},
+		buttons: {
+			confirmPay: 'ПОДТВЕРДИТЬ И ОПЛАТИТЬ',
+			connectWallet: 'ПОДКЛЮЧИТЬ КОШЕЛЁК',
+		},
+		security: '256-БИТНОЕ ЗАШИФРОВАННОЕ СОЕДИНЕНИЕ',
+	},
+};
+
+export const messages = { es, en, zh, fr, ru } as const;
 
 export type Messages = (typeof messages)[Locale];
 

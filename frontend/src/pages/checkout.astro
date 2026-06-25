@@ -28,8 +28,8 @@ const cartItems = [
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
 const checkoutSteps = [
-  { label: 'DETALLE', url: '/product-detail' },
-  { label: 'PAGO', url: '/checkout' },
+  { label: m.checkoutSteps.detail, url: '/product-detail' },
+  { label: m.checkoutSteps.pay, url: '/checkout' },
 ];
 ---
 
