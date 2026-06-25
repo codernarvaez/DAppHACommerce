@@ -3,9 +3,16 @@ import Layout from '../layouts/Layout.astro';
 import PaymentMethods from '../components/checkout/PaymentMethods.astro';
 import OrderSummary from '../components/checkout/OrderSummary.astro';
 import BreadcrumbRadio from '../components/BreadcrumbRadio.astro';
-import { resolveLocale } from '../lib/i18n';
 
-const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
+import { 
+  getI18n,
+  resolveLocale,
+  readConsent 
+} from '../lib/i18n';
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m } = getI18n(locale);
 
 const paymentMethods = [
   { id: 'card', name: 'Tarjeta de Crédito', description: 'Visa, MasterCard, American Express', icon: '💳', fee: '2.5%', available: true },
@@ -26,7 +33,11 @@ const checkoutSteps = [
 ];
 ---
 
-<Layout locale={locale} title='Checkout - DApp HA Commerce' description='Pasarela de pagos'>
+<Layout 
+  locale={locale} 
+  title={m.checkout.title}
+  description={m.checkout.description}
+>
   <main style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
     <BreadcrumbRadio steps={checkoutSteps} currentStep={2} />
     <div style="display: grid; grid-template-columns: 1fr 350px; gap: 40px; align-items: start;">
@@ -43,7 +54,6 @@ const checkoutSteps = [
       </aside>
     </div>
   </main>
-</Layout>
 
 <style>
   main {

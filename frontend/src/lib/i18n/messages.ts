@@ -90,6 +90,56 @@ const es = {
 		Cacao: 'Cacao',
 		Specialty: 'Especialidad',
 	},
+	checkout: {
+		title: 'Checkout - DApp HA Commerce',
+		description: 'Pasarela de pagos',
+		paymentMethods: {
+			title: 'Métodos de Pagos Avanzada',
+			subtitle: 'Selecciona su método de pago preferido para procesar la transacción de forma segura.',
+			card: 'TARJETA',
+			cardDesc: 'Crédito o Débito',
+			bank: 'TRANSFERENCIA',
+			bankDesc: 'Banca Nacional',
+			crypto: 'WEB3 / DEX',
+			cryptoDesc: 'Crypto Wallet',
+		},
+		paymentForms: {
+			card: {
+				title:'Datos de la Tarjeta',
+				cardHolder: 'TITULAR DE LA TARJETA',
+				cardHolderPlaceholder: 'NOMBRE COMPLETO',
+				cardNumber: 'NÚMERO DE TARJETA',
+				cardExpiry: 'EXPIRACIÓN',
+				cardCvc: 'CVC / CVV',
+				saveCard: 'Guardar esta tarjeta para futuras compras.',
+			},
+			bank: {
+				bankFormSubtitle:'Transferencia Bancaria',
+				label: 'BANCO',
+				account: 'CUENTA (IBAN)',
+				reference: 'REFERENCIA',
+				note: 'Nota:', 
+				noteInfo: 'El pedido se procesará una vez confirmada la recepción de los fondos (aprox. 24-48h).', 
+			},
+			web3: {
+				title:'Connect your Wallet',
+				descripcion: 'Soportamos MetaMask, WalletConnect y Phantom. Transacción nativa en USDC, USDT o ETH.',
+			},
+		},
+		orderSummary: {
+			title: 'RESUMEN DEL PEDIDO',
+			subtotal: 'Subtotal',
+			tax: 'Impuestos (IVA {rate}%)',
+			discount: 'Descuento ({code})',
+			total: 'TOTAL',
+			itemQty: 'QTY: {qty}'
+		},
+		buttons: {
+			confirmPay: 'CONFIRMAR Y PAGAR',
+			connectWallet: 'CONNECT WALLET'
+		},
+		security: 'CONEXIÓN CIFRADA DE 256 BITS'
+	}
 } as const;
 
 const en: typeof es = {
@@ -181,6 +231,56 @@ const en: typeof es = {
 		Cacao: 'Cacao',
 		Specialty: 'Specialty',
 	},
+	checkout: {
+		title: 'Checkout - DApp HA Commerce',
+		description: 'Payment Gateway',
+		paymentMethods: {
+			title: 'Advanced Payment Methods',
+			subtitle: 'Select your preferred payment method to process the transaction securely.',
+			card: 'CARD',
+			cardDesc: 'Credit or Debit',
+			bank: 'BANK TRANSFER',
+			bankDesc: 'National Banking',
+			crypto: 'WEB3 / DEX',
+			cryptoDesc: 'Crypto Wallet',
+		},
+		paymentForms: {
+			card: {
+				title: 'Card Details',
+				cardHolder: 'CARDHOLDER',
+				cardHolderPlaceholder: 'FULL NAME',
+				cardNumber: 'CARD NUMBER',
+				cardExpiry: 'EXPIRY DATE',
+				cardCvc: 'CVC / CVV',
+				saveCard: 'Save this card for future purchases.',
+			},
+			bank: {
+				bankFormSubtitle: 'Bank Transfer',
+				label: 'BANK',
+				account: 'ACCOUNT (IBAN)',
+				reference: 'REFERENCE',
+				note: 'Note:',
+				noteInfo: 'The order will be processed once receipt of funds has been confirmed (approx. 24-48h).',
+			},
+			web3: {
+				title: 'Connect your Wallet',
+				descripcion: 'We support MetaMask, WalletConnect and Phantom. Native transactions in USDC, USDT or ETH.',
+			},
+		},
+		orderSummary: {
+			title: 'ORDER SUMMARY',
+			subtotal: 'Subtotal',
+			tax: 'Taxes (VAT {rate}%)',
+			discount: 'Discount ({code})',
+			total: 'TOTAL',
+			itemQty: 'QTY: {qty}'
+		},
+		buttons: {
+			confirmPay: 'CONFIRM AND PAY',
+			connectWallet: 'CONNECT WALLET'
+		},
+		security: '256-BIT ENCRYPTED CONNECTION'
+	}
 };
 
 const zh: typeof es = {
@@ -269,6 +369,56 @@ const zh: typeof es = {
 		Cacao: '可可',
 		Specialty: '精品',
 	},
+	checkout: {
+		title: '结账 - DApp HA Commerce',
+		description: '支付网关',
+		paymentMethods: {
+			title: '高级支付方式',
+			subtitle: '请选择您偏好的支付方式，以安全地完成交易。',
+			card: '银行卡',
+			cardDesc: '信用卡或借记卡',
+			bank: '银行转账',
+			bankDesc: '国家银行',
+			crypto: 'WEB3 / DEX',
+			cryptoDesc: '加密钱包',
+		},
+		paymentForms: {
+			card: {
+				title: '银行卡信息',
+				cardHolder: '持卡人姓名',
+				cardHolderPlaceholder: '完整姓名',
+				cardNumber: '卡号',
+				cardExpiry: '有效期',
+				cardCvc: '安全码（CVC / CVV）',
+				saveCard: '保存此卡以供将来购买使用。',
+			},
+			bank: {
+				bankFormSubtitle: '银行转账',
+				label: '银行',
+				account: '账户（IBAN）',
+				reference: '参考号',
+				note: '注意：',
+				noteInfo: '确认收到款项后才会处理订单（约 24-48 小时）。',
+			},
+			web3: {
+				title: '连接您的钱包',
+				description: '支持 MetaMask、WalletConnect 和 Phantom。支持 USDC、USDT 或 ETH 原生交易。',
+			},
+		},
+		orderSummary: {
+			title: '订单摘要',
+			subtotal: '小计',
+			tax: '税费（增值税 {rate}%）',
+			discount: '折扣（{code}）',
+			total: '总计',
+			itemQty: '数量：{qty}'
+		},
+		buttons: {
+			confirmPay: '确认并支付',
+			connectWallet: '连接钱包'
+		},
+		security: '256 位加密连接'
+	}
 };
 
 const fr: typeof es = {
@@ -362,6 +512,56 @@ const fr: typeof es = {
 		Cacao: 'Cacao',
 		Specialty: 'Spécialité',
 	},
+	checkout: {
+		title: 'Paiement - DApp HA Commerce',
+		description: 'Passerelle de paiement',
+		paymentMethods: {
+			title: 'Méthodes de paiement avancées',
+			subtitle: 'Sélectionnez votre méthode de paiement préférée pour traiter la transaction en toute sécurité.',
+			card: 'CARTE',
+			cardDesc: 'Crédit ou Débit',
+			bank: 'VIREMENT BANCAIRE',
+			bankDesc: 'Banque nationale',
+			crypto: 'WEB3 / DEX',
+			cryptoDesc: 'Portefeuille crypto',
+		},
+		paymentForms: {
+			card: {
+				title: 'Informations de la carte',
+				cardHolder: 'TITULAIRE DE LA CARTE',
+				cardHolderPlaceholder: 'NOM COMPLET',
+				cardNumber: 'NUMÉRO DE CARTE',
+				cardExpiry: "DATE D'EXPIRATION",
+				cardCvc: 'Code de sécurité (CVC / CVV)',
+				saveCard: 'Enregistrer cette carte pour de futurs achats.',
+			},
+			bank: {
+				bankFormSubtitle: 'Virement bancaire',
+				label: 'BANQUE',
+				account: 'COMPTE (IBAN)',
+				reference: 'RÉFÉRENCE',
+				note: 'Remarque :',
+				noteInfo: 'La commande sera traitée une fois la réception des fonds confirmée (env. 24 à 48 h).',
+			},
+			web3: {
+				title: 'Connectez votre portefeuille',
+				descripcion: 'Nous prenons en charge MetaMask, WalletConnect et Phantom. Transactions natives en USDC, USDT ou ETH.',
+			},
+		},
+		orderSummary: {
+			title: 'RÉCAPITULATIF DE LA COMMANDE',
+			subtotal: 'Sous-total',
+			tax: 'Taxes (TVA {rate}%)',
+			discount: 'Réduction ({code})',
+			total: 'TOTAL',
+			itemQty: 'QTÉ : {qty}'
+		},
+		buttons: {
+			confirmPay: 'CONFIRMER ET PAYER',
+			connectWallet: 'CONNECTER LE PORTEFEUILLE'
+		},
+		security: 'CONNEXION CHIFFRÉE 256 BITS'
+	}
 };
 
 export const messages = { es, en, zh, fr } as const;
