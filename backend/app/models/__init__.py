@@ -11,6 +11,8 @@ from .schemas import (
     ProductoRead,
     QRTokensCreate,
     QRTokensRead,
+    GoogleOAuthPerfilCreate,
+    GoogleOAuthSyncRead,
     RolUsuario,
     SubastaRead,
     UsuarioCreate,

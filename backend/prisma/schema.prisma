@@ -51,7 +51,9 @@ enum EstadoOrden {
 model Cuenta {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email      String   @unique @db.VarChar(255)
-  clave      String   @db.VarChar(255)
+  clave      String?  @db.VarChar(255)
+  proveedor_auth    String   @default("local") @db.VarChar(50)
+  proveedor_auth_id String?  @unique @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamptz()
 
   // Relaciones
