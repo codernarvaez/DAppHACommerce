@@ -61,3 +61,27 @@ const { m } = getI18n(locale);
         <a href="/register">{}</a>
     </p>
 </div>
+
+<script>
+    import { supabase } from '../../lib/supabase';
+
+    const googleBtn = document.querySelector('.btn-login-google');
+
+    googleBtn?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // Redirigir a la pantalla de Google
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                // Redirigir a una página intermedia para procesar el token
+                redirectTo: `${window.location.origin}/auth/callback`
+            }
+        });
+
+        if (error) {
+            console.error("Error al iniciar sesión con Google:", error);
+            alert("No se pudo conectar con Google.");
+        }
+    });
+</script>

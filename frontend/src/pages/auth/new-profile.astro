@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { resolveLocale } from '../../lib/i18n';
+
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
+---
+
+<Layout locale={locale} title="Completar Perfil - ORIGIN TECH">
+  <main class="profile-wrapper">
+    <div class="profile-card">
+      <h2>¡Ya casi listo!</h2>
+      <p class="subtitle">Completa tu información de perfil para activar tu cuenta en la plataforma.</p>
+
+      <p id="form-error" class="form-error" hidden></p>
+
+      <form id="form-completar-perfil" class="form-grid">
+        <div class="form-group">
+          <label for="nombres">Nombres</label>
+          <input type="text" id="nombres" required placeholder="Tus nombres" autocomplete="given-name" />
+        </div>
+
+        <div class="form-group">
+          <label for="apellidos">Apellidos</label>
+          <input type="text" id="apellidos" required placeholder="Tus apellidos" autocomplete="family-name" />
+        </div>
+
+        <div class="form-group">
+          <label for="telefono">Teléfono</label>
+          <input
+            type="tel"
+            id="telefono"
+            required
+            placeholder="Ej: 0999999999"
+            pattern="^[0-9]{7,10}$"
+            title="Ingresa solo números (7 a 10 dígitos)"
+            autocomplete="tel"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="rol">¿Cuál es tu rol?</label>
+          <select id="rol" required>
+            <option value="comprador">Comprador / Cliente</option>
+            <option value="productor">Productor de Café</option>
+            <option value="empleado">Personal Interno (POS/Bodega)</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="wallet">Dirección de Billetera Web3 (Opcional)</label>
+          <input
+            type="text"
+            id="wallet"
+            placeholder="0x..."
+            pattern="^0x[a-fA-F0-9]{40}$"
+            title="Debe ser una dirección Ethereum válida (0x seguido de 40 caracteres hexadecimales)"
+          />
+        </div>
+
+        <button type="submit" id="btn-submit" class="btn-submit">Finalizar Registro</button>
+      </form>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .profile-wrapper {
+    display: grid;
+    place-items: center;
+    min-height: 75vh;
+    padding: 20px;
+    font-family: 'Manrope', 'Space Grotesk', sans-serif;
+  }
+  .profile-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(18, 18, 18, 0.08);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  }
+  h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; margin-bottom: 6px; }
+  .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 30px; }
+
+  .form-error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    text-align: left;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .full-width { grid-column: 1 / -1; }
+
+  label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #4b5563; }
+  input, select {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid #111; }
+  input:invalid:not(:placeholder-shown) { border-color: #fca5a5; }
+
+  .btn-submit {
+    grid-column: 1 / -1;
+    background: #111;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 10px;
+    transition: background 0.2s, opacity 0.2s;
+  }
+  .btn-submit:hover:not(:disabled) { background: #2a2a2a; }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+</style>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const API_URL = import.meta.env.PUBLIC_API_BASE_URL;
+
+  const form = document.getElementById('form-completar-perfil') as HTMLFormElement | null;
+  const submitBtn = document.getElementById('btn-submit') as HTMLButtonElement | null;
+  const errorBox = document.getElementById('form-error') as HTMLParagraphElement | null;
+
+  function getInputValue(id: string): string {
+    return (document.getElementById(id) as HTMLInputElement | HTMLSelectElement)?.value ?? '';
+  }
+
+  function showError(message: string) {
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function hideError() {
+    if (!errorBox) return;
+    errorBox.hidden = true;
+  }
+
+  function setLoading(isLoading: boolean) {
+    if (!submitBtn) return;
+    submitBtn.disabled = isLoading;
+    submitBtn.textContent = isLoading ? 'Guardando...' : 'Finalizar Registro';
+  }
+
+  // Verifica sesión al cargar la página, no solo al hacer submit
+  async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = '/login';
+    }
+  }
+
+  checkSession();
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const perfilData = {
+      nombres: getInputValue('nombres'),
+      apellidos: getInputValue('apellidos'),
+      rol: getInputValue('rol'),
+      telefono: getInputValue('telefono'),
+      wallet_address: getInputValue('wallet') || null
+    };
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/google/perfil`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(perfilData)
+      });
+
+      if (response.ok) {
+        window.location.href = '/';
+        return;
+      }
+
+      // Intentamos leer el detalle del error que envía FastAPI
+      let detail = 'Hubo un error al guardar tu perfil.';
+      try {
+        const errorData = await response.json();
+        detail = errorData?.detail ?? detail;
+      } catch {
+        // respuesta sin JSON válido, usamos el mensaje por defecto
+      }
+      showError(detail);
+
+    } catch (err) {
+      console.error(err);
+      showError('No se pudo conectar con el servidor. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
