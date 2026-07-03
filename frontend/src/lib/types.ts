@@ -1,5 +1,19 @@
 export type EstadoProducto = 'borrador' | 'publicado' | 'agotado' | 'inactivo';
 export type EstadoSubasta = 'programada' | 'activa' | 'finalizada' | 'cancelada';
+export type EstadoLote = 'registrado' | 'verificado' | 'publicado';
+
+export interface Lote {
+	id: string;
+	productor_id: string;
+	codigo_lote: string;
+	variedad: string;
+	fecha_cosecha: string;
+	peso_kg: number;
+	proceso: string;
+	origen_geo: string;
+	estado: EstadoLote;
+	tx_hash?: string;
+}
 
 export interface Producto {
 	id: string;
