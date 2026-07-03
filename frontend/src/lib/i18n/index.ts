@@ -18,7 +18,7 @@ function parseAcceptLanguage(header: string | null): Locale | null {
 
 	for (const part of header.split(',')) {
 		const code = part.trim().split(';')[0]?.split('-')[0]?.toLowerCase();
-		if (code === 'es' || code === 'en' || code === 'zh' || code === 'fr') {
+		if (code === 'es' || code === 'en' || code === 'zh' || code === 'fr' || code === 'ru') {
 			return code;
 		}
 	}

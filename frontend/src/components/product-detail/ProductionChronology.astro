@@ -1,4 +1,15 @@
 ---
+
+import { 
+    getI18n,
+    resolveLocale,
+    readConsent 
+} from '../../lib/i18n';
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m } = getI18n(locale);
+
 // Datos simulados para comprobar interfaz
 const steps = [
   {
@@ -23,7 +34,7 @@ const steps = [
 ---
 
 <div class="chronology-container">
-  <h2>Cronología del Producto</h2>
+  <h2>{m.productDetail.chronology}</h2>
   <div class="timeline">
     {steps.map((step) => (
       <div class="timeline-item">

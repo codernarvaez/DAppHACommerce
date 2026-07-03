@@ -52,6 +52,12 @@ export function getCookieLabel(locale: Locale, purpose: CookiePurpose): string {
 			analytics: 'Analytiques',
 			marketing: 'Marketing',
 		},
+		ru: {
+			essential: 'Обязательные',
+			functional: 'Функциональные',
+			analytics: 'Аналитические',
+			marketing: 'Маркетинговые',
+		},
 	};
 	return labels[locale][purpose];
 }

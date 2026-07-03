@@ -17,6 +17,8 @@ import {
 	resolveLocale,
 } from '../lib/i18n';
 
+import '../styles/globals.css';
+
 const queryLang = Astro.url.searchParams.get('lang');
 if (isLocale(queryLang)) {
 	const consent = readConsent(Astro.cookies);
@@ -207,21 +209,6 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 	</script>
 
 	<style>
-		@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
-
-		:global(html) {
-			scroll-behavior: smooth;
-			background: #f4f1eb;
-		}
-
-		:global(body) {
-			font-family: 'Manrope', sans-serif;
-			background:
-				radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(244, 241, 235, 0.96) 40%),
-				linear-gradient(180deg, #f7f3ee 0%, #f1eee8 100%);
-			color: #121212;
-		}
-
 		.page-shell {
 			width: min(1280px, calc(100% - 32px));
 			margin: 0 auto;

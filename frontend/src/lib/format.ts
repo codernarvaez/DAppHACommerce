@@ -5,6 +5,7 @@ const priceSuffix: Record<Locale, string> = {
 	en: '/lb',
 	zh: '/磅',
 	fr: '/lb',
+	ru: '/фн',
 };
 
 export function formatPrice(
