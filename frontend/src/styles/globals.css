@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  /* ===== COLORES DE FONDO ===== */
+  --bg-page: #f4f1eb;                    /* Fondo de la página */
+  --bg-page-alt: #f7f3ee;                /* Fondo alternativo (gradiente) */
+  --bg-card: var(--color-secundary);                    /* Fondo de tarjetas/containers */
+  --bg-card-hover: #f3f3f3;              /* Fondo tarjeta al hover */
+  --bg-input: var(--color-secundary);                   /* Fondo de inputs */
+  --bg-input-focus: var(--color-secundary);             /* Fondo input enfocado */
+
+  --color-primary: #000000;
+  --color-secundary: #ffffff;
+  --color-tertiary: #0d6f66;
+
+  --bg-button-primary-hover: #1a1a1a;    /* Fondo botón principal hover */
+  --bg-button-disabled: #e8e8e8;         /* Fondo botón deshabilitado */
+  --bg-badge-success: #e6f4ea;           /* Fondo badge éxito */
+  --bg-badge-warning: #fef3c7;           /* Fondo badge advertencia */
+  --bg-badge-error: #fef2f2;             /* Fondo badge error */
+
+  /* ===== COLORES DE TEXTO ===== */
+  --text-primary: #121212;               /* Texto principal (títulos, cuerpo) */
+  --text-secondary: #666666;             /* Texto secundario (descripciones, labels) */
+  --text-muted: #999999;                 /* Texto atenuado (placeholders, ayuda) */
+  --text-link: #166534;                  /* Texto de enlaces */
+  --text-success: #166534;               /* Texto éxito */
+  --text-warning: #92400e;               /* Texto advertencia */
+  --text-error: #dc2626;                 /* Texto error */
+
+  /* ===== COLORES DE BOTONES ===== */
+  --btn-primary-hover: #1a1a1a;
+  --btn-secondary-hover: #0b5d56;
+  --btn-outline-hover-bg: #f4f1eb;
+  --btn-disabled-bg: #e8e8e8;
+  --btn-disabled-text: #999999;
+
+  /* ===== COLORES DE ESTADOS ===== */
+  --state-success: #22c55e;
+  --state-success-bg: #e6f4ea;
+  --state-success-text: #166534;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fef3c7;
+  --state-warning-text: #92400e;
+  --state-error: #dc2626;
+  --state-error-bg: #fef2f2;
+  --state-error-text: #dc2626;
+  --state-info: #3b82f6;
+  --state-info-bg: #eff6ff;
+  --state-info-text: #1d4ed8;
+
+  /* ===== TIPOGRAFÍA ===== */
+  --font-sans: 'Manrope', sans-serif;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ===== BASE GLOBAL ===== */
+html {
+  scroll-behavior: smooth;
+  background: #f4f1eb;
+}
+
+body {
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.9), rgba(244,241,235,0.96) 40%),
+    linear-gradient(180deg, #f7f3ee 0%, #f1eee8 100%);
+  color: var(--color-on-surface);
+  margin: 0;
+  min-height: 100%;
+}
