@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager  
+from contextlib import asynccontextmanager
 from app.core.database import prisma
 
-from app.api import lotes, productos, pos, subastas, usuarios
+from app.api import auth, lotes, productos, pos, subastas, usuarios
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,6 +34,8 @@ app.include_router(productos.router)
 app.include_router(pos.router)
 app.include_router(subastas.router)
 app.include_router(usuarios.router)
+app.include_router(auth.router)
+
 
 @app.get("/", tags=["Health Check"])
 def read_root():

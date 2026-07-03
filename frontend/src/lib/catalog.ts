@@ -1,6 +1,7 @@
 import { checkApiHealth } from './api/client';
 import { fetchProductos } from './api/productos';
 import { fetchSubastas } from './api/subastas';
+import { fetchLotes } from './api/lotes';
 import { formatPrice } from './format';
 import {
 	getMessages,
@@ -8,7 +9,7 @@ import {
 	translateCategory,
 	type Locale,
 } from './i18n';
-import type { AuctionItem, CatalogData, MarketItem, Producto, Subasta } from './types';
+import type { AuctionItem, CatalogData, MarketItem, Producto, Subasta, Lote } from './types';
 
 const ACCENTS = [
 	'from-ruby-500',
@@ -26,6 +27,7 @@ function pickAccent(index: number): string {
 function buildMarketItem(
 	producto: Producto,
 	subasta: Subasta | undefined,
+	lote: Lote | undefined,
 	index: number,
 	locale: Locale,
 ): MarketItem {
@@ -36,7 +38,9 @@ function buildMarketItem(
 		id: producto.id,
 		title: producto.nombre,
 		description: producto.descripcion || m.market.defaultDescription,
-		origin: translateCategory(locale, producto.categoria),
+		//origin: translateCategory(locale, producto.categoria),
+		// Extraer origen real del lote, con un fallback de seguridad
+		origin: lote?.origen_geo || translateCategory(locale, producto.categoria),
 		price: isAuction
 			? formatPrice(subasta!.precio_actual, locale)
 			: formatPrice(producto.precio_base, locale),
@@ -84,7 +88,7 @@ export async function getCatalogData(locale: Locale): Promise<CatalogData> {
 	}
 
 	try {
-		const [productos, subastas] = await Promise.all([fetchProductos(), fetchSubastas()]);
+		const [productos, subastas, lotes] = await Promise.all([fetchProductos(), fetchSubastas(), fetchLotes()]);
 
 		const subastaByProducto = new Map<string, Subasta>();
 		for (const subasta of subastas) {
@@ -97,12 +101,14 @@ export async function getCatalogData(locale: Locale): Promise<CatalogData> {
 
 		const productoById = new Map(productos.map((producto) => [producto.id, producto]));
 
+		const loteById = new Map(lotes.map((lote) => [lote.id, lote]));
+
 		const visibleProducts = productos.filter(
 			(producto) => producto.estado === 'publicado' || subastaByProducto.has(producto.id),
 		);
 
 		const items = visibleProducts.map((producto, index) =>
-			buildMarketItem(producto, subastaByProducto.get(producto.id), index, locale),
+			buildMarketItem(producto, subastaByProducto.get(producto.id),loteById.get(producto.lote_id), index, locale),
 		);
 
 		const auctions = subastas
