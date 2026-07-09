@@ -2,6 +2,7 @@
 import LanguageSwitcher from './LanguageSwitcher.astro';
 import ApiStatus from './ApiStatus.astro';
 import { getCatalogData } from '../lib/catalog';
+import { Icon } from 'astro-icon/components';
 
 interface Props {
   locale: string;
@@ -15,7 +16,7 @@ const { locale, m, apiOnline, apiError} = Astro.props;
 
 <header class="topbar">
   <div class="brand">
-    <span class="menu">☰</span>
+    <span class="menu"><Icon name="coffee" class="icon"/></span>
     <span>CoffeeTrace Market</span>
   </div>
   <nav>
@@ -25,11 +26,31 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     <a href="/#profile">{m.nav.profile}</a>
   </nav>
   <div class="topbar-actions">
-    <a href="/auth/login" class="login">Iniciar Sesión</a>
     <LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
+    <a href="/auth/login" class="login" data-login-link>{m.login.name}</a>
     <ApiStatus online={apiOnline && !apiError} m={m} />
   </div>
 </header>
+
+<script>
+  import { supabase } from '../lib/supabase';
+  const loginLink = document.querySelector('[data-login-link]');
+
+  const updateLoginVisibility = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      loginLink?.remove();
+    }
+  };
+
+  updateLoginVisibility();
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      loginLink?.remove();
+    }
+  });
+</script>
 
 <style>
   .topbar {

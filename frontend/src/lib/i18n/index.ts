@@ -12,6 +12,7 @@ import {
 } from './locales';
 import { getMessages, type Messages } from './messages';
 import { getPrivacyMessages, type PrivacyMessages } from './privacy-messages';
+import { getErrorMessages, type ErrorMessages } from './error-messages';
 
 function parseAcceptLanguage(header: string | null): Locale | null {
 	if (!header) return null;
@@ -63,10 +64,12 @@ export function getI18n(locale: Locale): {
 	locale: Locale;
 	m: Messages;
 	pm: PrivacyMessages;
+	em: ErrorMessages;
 } {
-	return { locale, m: getMessages(locale), pm: getPrivacyMessages(locale) };
+	return { locale, m: getMessages(locale), pm: getPrivacyMessages(locale), em: getErrorMessages(locale) };
 }
 
 export { getMessages, interpolate, translateCategory } from './messages';
 export { getPrivacyMessages } from './privacy-messages';
+export { getErrorMessages } from './error-messages';
 export { isLocale, LOCALES, LOCALE_COOKIE, type Locale } from './locales';

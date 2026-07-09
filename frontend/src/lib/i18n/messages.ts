@@ -149,13 +149,22 @@ export const es = {
 			tax: 'Impuestos (IVA {rate}%)',
 			discount: 'Descuento ({code})',
 			total: 'TOTAL',
-			itemQty: 'QTY: {qty}'
+			itemQty: 'QTY: {qty}',
 		},
 		buttons: {
 			confirmPay: 'CONFIRMAR Y PAGAR',
-			connectWallet: 'CONNECT WALLET'
+			connectWallet: 'CONNECT WALLET',
 		},
-		security: 'CONEXIÓN CIFRADA DE 256 BITS'
+		security: 'CONEXIÓN CIFRADA DE 256 BITS',
+	},
+	login: {
+		name: 'Iniciar Sesión',
+		welcome: 'Bienvenido de Nuevo',
+		email: 'Correo Electrónico',
+		password: 'Contraseña',
+		google: 'Continuar con Google',
+		text: 'No tienes cuenta?',
+		register: 'Regístrate',
 	}
 };
 
@@ -311,9 +320,18 @@ export const en: typeof es = {
 		},
 		buttons: {
 			confirmPay: 'CONFIRM AND PAY',
-			connectWallet: 'CONNECT WALLET'
+			connectWallet: 'CONNECT WALLET',
 		},
-		security: '256-BIT ENCRYPTED CONNECTION'
+		security: '256-BIT ENCRYPTED CONNECTION',
+	},
+	login: {
+		name: 'Login',
+		welcome: 'Welcome Back',
+		email: 'Email',
+		password: 'Password',
+		google: 'Continue with Google',
+		text: "Don't have an account?",
+		register: "Sign Up",
 	}
 };
 
@@ -466,9 +484,18 @@ export const zh: typeof es = {
 		},
 		buttons: {
 			confirmPay: '确认并支付',
-			connectWallet: '连接钱包'
+			connectWallet: '连接钱包',
 		},
-		security: '256 位加密连接'
+		security: '256 位加密连接',
+	},
+	login: {
+		name: '登录',
+		welcome: '欢迎回来',
+		email: '电子邮箱',
+		password: '密码',
+		google: '使用 Google 继续',
+		text: "还没有账号？",
+		register: "注册"
 	}
 };
 
@@ -626,10 +653,19 @@ export const fr: typeof es = {
 		},
 		buttons: {
 			confirmPay: 'CONFIRMER ET PAYER',
-			connectWallet: 'CONNECTER LE PORTEFEUILLE'
+			connectWallet: 'CONNECTER LE PORTEFEUILLE',
 		},
-		security: 'CONNEXION CHIFFRÉE 256 BITS'
-	}
+		security: 'CONNEXION CHIFFRÉE 256 BITS',
+	},
+	login: {
+		name: 'Connexion',
+		welcome: 'Bon retour',
+		email: 'E-mail',
+		password: 'Mot de passe',
+		google: 'Continuer avec Google',
+		text: "Vous n'avez pas de compte ?",
+		register: "S'inscrire",		
+	}	
 };
 
 export const ru: typeof es = {
@@ -793,6 +829,15 @@ export const ru: typeof es = {
 		},
 		security: '256-БИТНОЕ ЗАШИФРОВАННОЕ СОЕДИНЕНИЕ',
 	},
+	login: {
+		name: 'Войти',
+		welcome: 'С возвращением',
+		email: 'Электронная почта',
+		password: 'Пароль',
+		google: 'Продолжить с Google',
+		text: "Нет аккаунта?",
+		register: "Зарегистрироваться",
+	}	
 };
 
 export const messages = { es, en, zh, fr, ru } as const;
