@@ -5,7 +5,11 @@ import { resolveLocale } from '../../lib/i18n';
 const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
 ---
 
-<Layout locale={locale} title="Completar Perfil - ORIGIN TECH">
+<Layout
+  locale={locale}
+  title="Completar Perfil - ORIGIN TECH"
+  description="Completa tu perfil para activar tu cuenta en CoffeeTrace Market."
+>
   <main class="profile-wrapper">
     <div class="profile-card">
       <h2>¡Ya casi listo!</h2>

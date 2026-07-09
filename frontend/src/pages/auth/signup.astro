@@ -1,0 +1,24 @@
+---
+import { Icon } from 'astro-icon/components';
+import '../../styles/globals.css';
+import './login.css';
+
+import { 
+    getI18n,
+    resolveLocale,
+    readConsent 
+} from '../../lib/i18n';
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m, em } = getI18n(locale);
+
+---
+<div class="signup-page">
+    <div class="back">
+        <a href="/" class="back-to-login" aria-label="Volver al Login">
+            <Icon name="times" class="icon"/>
+        </a>
+    </div>
+    
+</div>

@@ -1,28 +1,5 @@
-:root {
-    --color-on-surface: #121212;
-    --color-on-surface-variant: #666;
-    --color-outline: #999; /* icons */
-    --color-surface-soft: rgba(18, 18, 18, 0.06);
-    --color-secundary: #0d6f66;
-    --color-white: #ffffff;
-
-}
-
-:global(html) {
-    scroll-behavior: smooth;
-    background: #f4f1eb;
-}
-
-:global(body) {
-    font-family: 'Manrope', sans-serif;
-    background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(244, 241, 235, 0.96) 40%),
-        linear-gradient(180deg, #f7f3ee 0%, #f1eee8 100%);
-    color: var(--color-on-surface);
-}
-
 .payment-header {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-sans);
 }
 
 /* Forms Container */
@@ -321,8 +298,8 @@
 
 .payment-confirm-btn {
     padding: 12px 32px;
-    background: var(--color-on-surface);
-    color: var(--color-white);
+    background: var(--bg-button-primary-hover);
+    color: var(--color-secundary);
     border: none;
     border-radius: 8px;
     font-size: 12px;

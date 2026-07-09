@@ -1,8 +1,11 @@
 body {
     margin: 0;
-    display: grid;
-    place-content: center;
-    min-height: 100vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; 
+    padding: 24px;
+    box-sizing: border-box;
     background:
         radial-gradient(circle at 15% 20%, rgba(255,183,77,.18), transparent 30%),
         radial-gradient(circle at 85% 25%, rgba(100,181,246,.18), transparent 35%),
@@ -16,7 +19,7 @@ body {
     position: relative;
     font-family: 'Space Grotesk', sans-serif;
     align-items: center;
-    width: 450px;
+    width: min(450px, 100%);
     padding: 24px;
     background-color: #222222;
     border: 2px solid var(--color-surface-soft);
