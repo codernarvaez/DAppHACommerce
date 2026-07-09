@@ -9,6 +9,8 @@ from .schemas import (
     ProductorCreate,
     ProductorRead,
     ProductoRead,
+    ProductoCreate,
+    ProductoUpdate,
     QRTokensCreate,
     QRTokensRead,
     GoogleOAuthPerfilCreate,
@@ -18,4 +20,6 @@ from .schemas import (
     UsuarioCreate,
     UsuarioRead,
     LoteRead,
+    LoteCreate,
+    LoteUpdate,
 )
