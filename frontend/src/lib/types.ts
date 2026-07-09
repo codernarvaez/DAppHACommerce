@@ -12,8 +12,27 @@ export interface Lote {
 	proceso: string;
 	origen_geo: string;
 	estado: EstadoLote;
+	id_trazabilidad_externa: string;
+	datos_trazabilidad: Record<string, unknown>;
 	tx_hash?: string;
+	created_at: string;
 }
+
+export interface LoteCreateInput {
+	productor_id: string;
+	codigo_lote: string;
+	variedad: string;
+	fecha_cosecha: string;
+	peso_kg: number;
+	proceso: string;
+	origen_geo: string;
+	estado: EstadoLote;
+	id_trazabilidad_externa?: string;
+	datos_trazabilidad?: Record<string, unknown>;
+	tx_hash?: string | null;
+}
+
+export type LoteUpdateInput = Partial<LoteCreateInput>;
 
 export interface Producto {
 	id: string;
@@ -26,7 +45,22 @@ export interface Producto {
 	stock_disponible: number;
 	estado: EstadoProducto;
 	created_at: string;
+	tx_hash?: string | null;
 }
+
+export interface ProductoCreateInput {
+	lote_id: string;
+	nombre: string;
+	descripcion?: string;
+	categoria: string;
+	imagenes: string[];
+	precio_base: string | number;
+	stock_disponible: number;
+	estado: EstadoProducto;
+	tx_hash?: string | null;
+}
+
+export type ProductoUpdateInput = Partial<ProductoCreateInput>;
 
 export interface Subasta {
 	id: string;

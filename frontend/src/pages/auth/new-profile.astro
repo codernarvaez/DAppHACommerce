@@ -140,6 +140,33 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
   const form = document.getElementById('form-completar-perfil') as HTMLFormElement | null;
   const submitBtn = document.getElementById('btn-submit') as HTMLButtonElement | null;
   const errorBox = document.getElementById('form-error') as HTMLParagraphElement | null;
+  const inputNombres = document.getElementById('nombres') as HTMLInputElement;
+  const inputApellidos = document.getElementById('apellidos') as HTMLInputElement;
+  const inputTelefono = document.getElementById('telefono') as HTMLInputElement;
+
+  // AUTOCOMPLETAR DATOS AL CARGAR LA PÁGINA
+  document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session && session.user && session.user.user_metadata) {
+      const metadata = session.user.user_metadata;
+      
+      // Google devuelve "full_name", lo separamos en nombres y apellidos
+      if (metadata.full_name) {
+        const partesNombre = metadata.full_name.split(' ');
+        const mitad = Math.ceil(partesNombre.length / 2);
+        
+        inputNombres.value = partesNombre.slice(0, mitad).join(' ');
+        inputApellidos.value = partesNombre.slice(mitad).join(' ');
+      }
+      
+      // Si hay teléfono, lo autocompleta
+      if (metadata.phone) {
+        inputTelefono.value = metadata.phone;
+      }
+    }
+  });
+
 
   function getInputValue(id: string): string {
     return (document.getElementById(id) as HTMLInputElement | HTMLSelectElement)?.value ?? '';
@@ -183,10 +210,13 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
     }
 
     const perfilData = {
-      nombres: getInputValue('nombres'),
-      apellidos: getInputValue('apellidos'),
+      //nombres: getInputValue('nombres'),
+      //apellidos: getInputValue('apellidos'),
+      //telefono: getInputValue('telefono'),
       rol: getInputValue('rol'),
-      telefono: getInputValue('telefono'),
+      nombres: inputNombres.value,
+      apellidos: inputApellidos.value,
+      telefono: inputTelefono.value,
       wallet_address: getInputValue('wallet') || null
     };
 
@@ -203,7 +233,12 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
       });
 
       if (response.ok) {
-        window.location.href = '/';
+        // Se guarda el rol y nombre en localStorage para mostrar dashboard personalizado
+        localStorage.setItem('user_role', perfilData.rol.trim().toLowerCase());
+        const primerNombreInput = inputNombres.value.split(' ')[0];
+        localStorage.setItem('user_name', primerNombreInput);
+        
+        window.location.href = '/dashboard';
         return;
       }
 

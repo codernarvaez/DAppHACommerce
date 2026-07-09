@@ -77,7 +77,14 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
                 }
                 window.location.href = '/auth/new-profile';
             } else {
-                window.location.href = '/';
+                if (statusText) {
+                    statusText.textContent = 'Perfil detectado, accediendo al sistema...';
+                }
+                if (data?.usuario?.rol) {
+                    localStorage.setItem('user_role', String(data.usuario.rol).trim().toLowerCase());
+                }
+
+                window.location.href = '/dashboard';
             }
 
         } catch (error) {
@@ -87,7 +94,7 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
             }
             await supabase.auth.signOut();
             setTimeout(() => {
-                window.location.href = '/login?error=sync_failed';
+                window.location.href = '/';
             }, 1500);
         } finally {
             syncing = false;
