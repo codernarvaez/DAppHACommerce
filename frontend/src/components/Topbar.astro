@@ -24,6 +24,7 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     <a href="/#auctions">{m.nav.auctions}</a>
     <a href="/#wallet">{m.nav.wallet}</a>
     <a href="/#profile">{m.nav.profile}</a>
+    <button type="button" class="sample-link" data-open-sample>{m.nav.sampleRequest ?? 'Solicitar muestra'}</button>
   </nav>
   <div class="topbar-actions">
     <LanguageSwitcher locale={locale} label={m.lang.switcherLabel} />
@@ -32,9 +33,80 @@ const { locale, m, apiOnline, apiError} = Astro.props;
   </div>
 </header>
 
+<div class="sample-modal" data-sample-modal hidden aria-hidden="true">
+  <div class="sample-backdrop" data-close-sample></div>
+  <section class="sample-card" role="dialog" aria-modal="true" aria-labelledby="sample-title">
+    <button type="button" class="sample-close" aria-label="Cerrar" data-close-sample>✕</button>
+    <p class="sample-kicker">Solicitud Comercial</p>
+    <h2 id="sample-title">Solicitar muestra</h2>
+    <p class="sample-copy">Completa los datos y te contactaremos para coordinar el envio.</p>
+
+    <form class="sample-form" data-sample-form>
+      <label>
+        Empresa
+        <input type="text" name="empresa" placeholder="Nombre de la empresa" required />
+      </label>
+      <label>
+        Correo
+        <input type="email" name="correo" placeholder="compras@empresa.com" required />
+      </label>
+      <label>
+        Direccion
+        <input type="text" name="direccion" placeholder="Calle, ciudad, pais" required />
+      </label>
+      <label>
+        Pedido
+        <textarea name="pedido" rows="4" placeholder="Detalla origen, volumen y requerimientos" required></textarea>
+      </label>
+      <div class="sample-actions">
+        <button type="button" class="sample-secondary" data-close-sample>Cancelar</button>
+        <button type="submit" class="sample-primary">Enviar solicitud</button>
+      </div>
+    </form>
+  </section>
+</div>
+
 <script>
   import { supabase } from '../lib/supabase';
   const loginLink = document.querySelector('[data-login-link]');
+  const modal = document.querySelector('[data-sample-modal]');
+  const openModalBtn = document.querySelector('[data-open-sample]');
+  const closeModalEls = document.querySelectorAll('[data-close-sample]');
+  const sampleForm = document.querySelector('[data-sample-form]');
+
+  const openSampleModal = () => {
+    if (!(modal instanceof HTMLElement)) return;
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeSampleModal = () => {
+    if (!(modal instanceof HTMLElement)) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
+
+  // Fuerza estado inicial cerrado incluso si el atributo hidden se pierde por estilos/global reset.
+  closeSampleModal();
+
+  openModalBtn?.addEventListener('click', openSampleModal);
+  closeModalEls.forEach((el) => {
+    el.addEventListener('click', (event) => {
+      event.preventDefault();
+      closeSampleModal();
+    });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeSampleModal();
+  });
+
+  sampleForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    closeSampleModal();
+  });
 
   const updateLoginVisibility = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -109,8 +181,19 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     opacity: 0.82;
   }
 
-  nav a:hover {
+  nav a:hover,
+  .sample-link:hover {
     opacity: 1;
+  }
+
+  .sample-link {
+    border: 0;
+    background: none;
+    color: #121212;
+    opacity: 0.82;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
   }
 
   .login {
@@ -132,6 +215,124 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     box-shadow: 0 4px 12px var(--color-on-surface);
   }
 
+  .sample-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+
+  .sample-modal[hidden] {
+    display: none !important;
+  }
+
+  .sample-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 10, 0.55);
+    backdrop-filter: blur(2px);
+  }
+
+  .sample-card {
+    position: relative;
+    width: min(560px, 100%);
+    background: #fefbf4;
+    border: 1px solid rgba(18, 18, 18, 0.12);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.25);
+  }
+
+  .sample-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: 0;
+    background: #111;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .sample-kicker {
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: #2f6b52;
+    font-weight: 800;
+  }
+
+  .sample-card h2 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.6rem;
+  }
+
+  .sample-copy {
+    margin: 8px 0 18px;
+    color: #5b5d5b;
+    font-size: 0.92rem;
+  }
+
+  .sample-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .sample-form label {
+    display: grid;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #3b3e3c;
+  }
+
+  .sample-form input,
+  .sample-form textarea {
+    border: 1px solid #d7dbd6;
+    border-radius: 10px;
+    padding: 12px;
+    font: inherit;
+    background: #fff;
+  }
+
+  .sample-form textarea {
+    resize: vertical;
+    min-height: 96px;
+  }
+
+  .sample-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .sample-secondary,
+  .sample-primary {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .sample-secondary {
+    background: #eceee9;
+    color: #1c1f1d;
+  }
+
+  .sample-primary {
+    background: #1f3c31;
+    color: #fff;
+  }
+
   @media (max-width: 980px) {
     nav {
       display: none;
@@ -145,6 +346,15 @@ const { locale, m, apiOnline, apiError} = Astro.props;
   @media (max-width: 720px) {
     .topbar {
       border-radius: 20px;
+    }
+
+    .sample-card {
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .sample-actions {
+      flex-direction: column-reverse;
     }
   }
 </style>
