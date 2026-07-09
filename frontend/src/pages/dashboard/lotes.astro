@@ -1,0 +1,400 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Gestión de Lotes">
+  <div class="page-header">
+    <div>
+      <h1>Trazabilidad de Lotes</h1>
+      <p>Administra y visualiza el historial de producción de café.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary require-admin-prod" id="btn-agregar">+ Nuevo Lote</button>
+      <button class="btn-secondary">📥 Exportar CSV</button>
+    </div>
+  </div>
+
+  <div class="table-toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="lote-search" placeholder="Buscar por código, variedad u origen..." />
+    </div>
+    <div class="pagination-controls">
+      <button title="Refrescar" id="btn-refrescar-lotes">🔄</button>
+      <select>
+        <option>10 filas</option>
+        <option>25 filas</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-status" id="lote-status">Cargando lotes desde la base de datos...</div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Variedad</th>
+          <th>Origen</th>
+          <th>Cosecha</th>
+          <th>Peso (Kg)</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="lote-table-body">
+        <tr>
+          <td colspan="7">No hay información cargada todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</DashboardLayout>
+
+<style>
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .page-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin: 0 0 4px; }
+  .page-header p { color: #6b7280; margin: 0; }
+  
+  .header-actions { display: flex; gap: 12px; }
+  button { padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.9rem;}
+  .btn-primary { background: #111; color: #fff; transition: 0.2s; }
+  .btn-primary:hover { background: #333; }
+  .btn-secondary { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+
+  /* Toolbar */
+  .table-toolbar { display: flex; justify-content: space-between; margin-bottom: 16px; gap: 16px; }
+  .search-box { display: flex; align-items: center; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; flex: 1; max-width: 400px; }
+  .search-box input { border: none; outline: none; padding: 10px; width: 100%; font-family: 'Manrope'; }
+  .pagination-controls { display: flex; gap: 12px; }
+  .pagination-controls select, .pagination-controls button { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; }
+  .table-status { margin-bottom: 12px; color: #4b5563; font-size: 0.95rem; }
+
+  /* Tabla */
+  .table-container { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
+  .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+  .data-table th { background: #f9fafb; padding: 16px; font-weight: 700; color: #4b5563; border-bottom: 2px solid #e5e7eb; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+  .data-table td { padding: 16px; border-bottom: 1px solid #e5e7eb; color: #111; vertical-align: middle; }
+  .data-table tr:hover { background: #f9fafb; }
+  
+  .badge { padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .bg-green { background: #dcfce7; color: #166534; }
+  .bg-blue { background: #dbeafe; color: #1d4ed8; }
+  .bg-gray { background: #e5e7eb; color: #374151; }
+  
+  .action-cells { display: flex; gap: 8px; }
+  .btn-icon { background: none; border: none; padding: 6px; font-size: 1.1rem; border-radius: 6px; }
+  .btn-icon:hover { background: #f3f4f6; }
+  .text-red { filter: grayscale(1); } /* Solo para mock, puedes usar SVG rojos */
+
+  /* Por defecto ocultamos los botones de permisos estrictos */
+  .require-admin-prod { display: none !important; }
+  .table-empty { color: #6b7280; text-align: center; }
+</style>
+
+<script>
+  import { createLote, deleteLote, fetchLotes, updateLote } from '../../lib/api/lotes';
+  import { supabase } from '../../lib/supabase';
+
+  const API_URL = import.meta.env.PUBLIC_API_BASE_URL;
+
+  const lotesState = {
+    items: [],
+    search: '',
+  };
+
+  function normalizeRole(role) {
+    const value = String(role || '').trim().toLowerCase();
+    if (value.includes('admin')) return 'administrador';
+    if (value.includes('productor')) return 'productor';
+    if (value.includes('empleado') || value.includes('pos') || value.includes('bodega')) return 'empleado';
+    if (value.includes('comprador') || value.includes('cliente')) return 'comprador';
+    return value;
+  }
+
+  function getRole() {
+    return normalizeRole(localStorage.getItem('user_role'));
+  }
+
+  function canManage() {
+    const role = getRole();
+    return role === 'administrador' || role === 'productor';
+  }
+
+  async function hydrateRoleFromSession() {
+    const currentRole = getRole();
+    if (currentRole) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/google/sync`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      const backendRole = normalizeRole(data?.usuario?.rol);
+      if (backendRole) {
+        localStorage.setItem('user_role', backendRole);
+      }
+    } catch {
+      // Sin bloquear UI si no hay backend o token.
+    }
+  }
+
+  function setStatus(message) {
+    const statusEl = document.getElementById('lote-status');
+    if (statusEl) statusEl.textContent = message;
+  }
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('es-EC', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
+
+  function badgeClass(estado) {
+    if (estado === 'publicado') return 'badge bg-green';
+    if (estado === 'verificado') return 'badge bg-blue';
+    return 'badge bg-gray';
+  }
+
+  function filteredItems() {
+    const term = lotesState.search.trim().toLowerCase();
+    if (!term) return lotesState.items;
+
+    return lotesState.items.filter((lote) => {
+      return [
+        lote.codigo_lote,
+        lote.variedad,
+        lote.origen_geo,
+        lote.estado,
+        lote.proceso,
+      ].some((value) => String(value || '').toLowerCase().includes(term));
+    });
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('lote-table-body');
+    if (!tbody) return;
+
+    const lotes = filteredItems();
+    tbody.innerHTML = '';
+
+    if (!lotes.length) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.className = 'table-empty';
+      cell.textContent = lotesState.items.length ? 'No hay lotes que coincidan con el filtro.' : 'No existen lotes registrados.';
+      row.appendChild(cell);
+      tbody.appendChild(row);
+      return;
+    }
+
+    for (const lote of lotes) {
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td><strong>${lote.codigo_lote}</strong></td>
+        <td>${lote.variedad}</td>
+        <td>${lote.origen_geo}</td>
+        <td>${String(lote.fecha_cosecha).slice(0, 10)}</td>
+        <td>${formatCurrency(lote.peso_kg)}</td>
+        <td><span class="${badgeClass(lote.estado)}">${lote.estado}</span></td>
+        <td class="action-cells">
+          <button class="btn-icon" data-action="view" data-id="${lote.id}" title="Ver Detalles">👁️</button>
+          <button class="btn-icon require-admin-prod" data-action="edit" data-id="${lote.id}" title="Editar">✏️</button>
+          <button class="btn-icon require-admin-prod text-red" data-action="delete" data-id="${lote.id}" title="Eliminar">🗑️</button>
+        </td>
+      `;
+
+      tbody.appendChild(row);
+    }
+
+    syncPermissionButtons();
+  }
+
+  function syncPermissionButtons() {
+    const restrictedElements = document.querySelectorAll('.require-admin-prod');
+    const display = canManage() ? 'inline-flex' : 'none';
+    restrictedElements.forEach((element) => {
+      element.style.setProperty('display', display, 'important');
+    });
+
+    const addButton = document.getElementById('btn-agregar');
+    if (addButton) {
+      addButton.style.display = canManage() ? 'inline-flex' : 'none';
+    }
+  }
+
+  function parseOptionalJson(value) {
+    if (!value || !value.trim()) return {};
+    return JSON.parse(value);
+  }
+
+  function promptForLote(existing) {
+    const productor_id = window.prompt('ID del productor', existing?.productor_id ?? '');
+    if (productor_id === null) return null;
+
+    const codigo_lote = window.prompt('Código del lote', existing?.codigo_lote ?? '');
+    if (!codigo_lote) return null;
+
+    const variedad = window.prompt('Variedad', existing?.variedad ?? '');
+    if (!variedad) return null;
+
+    const fecha_cosecha = window.prompt('Fecha de cosecha (YYYY-MM-DD)', existing?.fecha_cosecha?.slice(0, 10) ?? '');
+    if (!fecha_cosecha) return null;
+
+    const peso_kg = window.prompt('Peso en kg', existing ? String(existing.peso_kg) : '');
+    if (!peso_kg) return null;
+
+    const proceso = window.prompt('Proceso', existing?.proceso ?? '');
+    if (!proceso) return null;
+
+    const origen_geo = window.prompt('Origen geográfico', existing?.origen_geo ?? '');
+    if (!origen_geo) return null;
+
+    const estado = window.prompt('Estado (registrado, verificado, publicado)', existing?.estado ?? 'registrado');
+    if (!estado) return null;
+
+    const id_trazabilidad_externa = window.prompt('ID trazabilidad externa', existing?.id_trazabilidad_externa ?? '') ?? '';
+    const datos_trazabilidad = window.prompt('Datos de trazabilidad en JSON', JSON.stringify(existing?.datos_trazabilidad ?? {}, null, 2));
+    if (datos_trazabilidad === null) return null;
+
+    const tx_hash = window.prompt('Hash de transacción', existing?.tx_hash ?? '') ?? '';
+
+    let parsedJson;
+    try {
+      parsedJson = parseOptionalJson(datos_trazabilidad);
+    } catch {
+      window.alert('El campo de datos de trazabilidad debe ser JSON válido.');
+      return null;
+    }
+
+    return {
+      productor_id,
+      codigo_lote,
+      variedad,
+      fecha_cosecha,
+      peso_kg: Number(peso_kg),
+      proceso,
+      origen_geo,
+      estado,
+      id_trazabilidad_externa,
+      datos_trazabilidad: parsedJson,
+      tx_hash: tx_hash || null,
+    };
+  }
+
+  async function loadLotes() {
+    setStatus('Cargando lotes desde la base de datos...');
+    try {
+      lotesState.items = await fetchLotes();
+      renderTable();
+      setStatus(`Se cargaron ${lotesState.items.length} lotes desde la base de datos.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible cargar los lotes.';
+      setStatus(message);
+      renderTable();
+    }
+  }
+
+  async function handleCreate() {
+    if (!canManage()) return;
+
+    const payload = promptForLote();
+    if (!payload) return;
+
+    try {
+      await createLote(payload);
+      await loadLotes();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible crear el lote.';
+      window.alert(message);
+    }
+  }
+
+  async function handleEdit(id) {
+    if (!canManage()) return;
+
+    const existing = lotesState.items.find((item) => item.id === id);
+    if (!existing) return;
+
+    const payload = promptForLote(existing);
+    if (!payload) return;
+
+    try {
+      await updateLote(id, payload);
+      await loadLotes();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible editar el lote.';
+      window.alert(message);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!canManage()) return;
+
+    const existing = lotesState.items.find((item) => item.id === id);
+    if (!existing) return;
+
+    const confirmed = window.confirm(`¿Eliminar el lote ${existing.codigo_lote}?`);
+    if (!confirmed) return;
+
+    try {
+      await deleteLote(id);
+      await loadLotes();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible eliminar el lote.';
+      window.alert(message);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await hydrateRoleFromSession();
+    syncPermissionButtons();
+
+    document.getElementById('btn-agregar')?.addEventListener('click', handleCreate);
+    document.getElementById('btn-refrescar-lotes')?.addEventListener('click', loadLotes);
+    document.getElementById('lote-search')?.addEventListener('input', (event) => {
+      const input = event.target;
+      if (input instanceof HTMLInputElement) {
+        lotesState.search = input.value;
+        renderTable();
+      }
+    });
+
+    document.getElementById('lote-table-body')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const action = target.dataset.action;
+      const id = target.dataset.id;
+      if (!action || !id) return;
+
+      if (action === 'view') {
+        const lote = lotesState.items.find((item) => item.id === id);
+        if (lote) window.alert(JSON.stringify(lote, null, 2));
+        return;
+      }
+
+      if (action === 'edit') {
+        void handleEdit(id);
+        return;
+      }
+
+      if (action === 'delete') {
+        void handleDelete(id);
+      }
+    });
+
+    await loadLotes();
+  });
+</script>

@@ -59,13 +59,12 @@ async def obtener_identidad_autenticada(credentials: HTTPAuthorizationCredential
     Verifica el JWT de Supabase y asegura que exista la cuenta local asociada.
     """
     token = credentials.credentials
-
     try:
         user_response = supabase_client.auth.get_user(token)
         if not user_response or not user_response.user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido o expirado."
+                detail="Token inválido o expirado."   
             )
 
         cuenta = await _sincronizar_cuenta_supabase(user_response.user)
@@ -82,7 +81,8 @@ async def obtener_identidad_autenticada(credentials: HTTPAuthorizationCredential
 
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        print("ERROR EN LA AUTENTICACIÓN:", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Error de autenticación. Verifica tus credenciales."

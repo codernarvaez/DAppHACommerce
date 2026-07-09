@@ -1,0 +1,378 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Gestión de Productos">
+  <div class="page-header">
+    <div>
+      <h1>Trazabilidad de Productos</h1>
+      <p>Administra y visualiza el historial de producción de café.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary require-admin-prod" id="btn-agregar">+ Nuevo Producto</button>
+      <button class="btn-secondary">📥 Exportar CSV</button>
+    </div>
+  </div>
+
+  <div class="table-toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="producto-search" placeholder="Buscar por nombre, categoría o estado..." />
+    </div>
+    <div class="pagination-controls">
+      <button title="Refrescar" id="btn-refrescar-productos">🔄</button>
+      <select>
+        <option>10 filas</option>
+        <option>25 filas</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-status" id="producto-status">Cargando productos desde la base de datos...</div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Categoría</th>
+          <th>Precio Base</th>
+          <th>Stock Disponible</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="producto-table-body">
+        <tr>
+          <td colspan="7">No hay información cargada todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</DashboardLayout>
+
+<style>
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .page-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin: 0 0 4px; }
+  .page-header p { color: #6b7280; margin: 0; }
+  
+  .header-actions { display: flex; gap: 12px; }
+  button { padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 0.9rem;}
+  .btn-primary { background: #111; color: #fff; transition: 0.2s; }
+  .btn-primary:hover { background: #333; }
+  .btn-secondary { background: #fff; border: 1px solid #e5e7eb; color: #111; }
+
+  /* Toolbar */
+  .table-toolbar { display: flex; justify-content: space-between; margin-bottom: 16px; gap: 16px; }
+  .search-box { display: flex; align-items: center; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; flex: 1; max-width: 400px; }
+  .search-box input { border: none; outline: none; padding: 10px; width: 100%; font-family: 'Manrope'; }
+  .pagination-controls { display: flex; gap: 12px; }
+  .pagination-controls select, .pagination-controls button { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; }
+  .table-status { margin-bottom: 12px; color: #4b5563; font-size: 0.95rem; }
+
+  /* Tabla */
+  .table-container { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
+  .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+  .data-table th { background: #f9fafb; padding: 16px; font-weight: 700; color: #4b5563; border-bottom: 2px solid #e5e7eb; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+  .data-table td { padding: 16px; border-bottom: 1px solid #e5e7eb; color: #111; vertical-align: middle; }
+  .data-table tr:hover { background: #f9fafb; }
+  
+  .badge { padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .bg-green { background: #dcfce7; color: #166534; }
+  
+  .action-cells { display: flex; gap: 8px; }
+  .btn-icon { background: none; border: none; padding: 6px; font-size: 1.1rem; border-radius: 6px; }
+  .btn-icon:hover { background: #f3f4f6; }
+  .text-red { filter: grayscale(1); } /* Solo para mock, puedes usar SVG rojos */
+
+  /* Por defecto ocultamos los botones de permisos estrictos */
+  .require-admin-prod { display: none !important; }
+  .table-empty { color: #6b7280; text-align: center; }
+  .bg-blue { background: #dbeafe; color: #1d4ed8; }
+  .bg-red { background: #fee2e2; color: #b91c1c; }
+  .bg-gray { background: #e5e7eb; color: #374151; }
+</style>
+
+<script>
+  import { createProducto, deleteProducto, fetchProductos, updateProducto } from '../../lib/api/productos';
+  import { supabase } from '../../lib/supabase';
+
+  const API_URL = import.meta.env.PUBLIC_API_BASE_URL;
+
+  const productosState = {
+    items: [],
+    search: '',
+  };
+
+  function normalizeRole(role) {
+    const value = String(role || '').trim().toLowerCase();
+    if (value.includes('admin')) return 'administrador';
+    if (value.includes('productor')) return 'productor';
+    if (value.includes('empleado') || value.includes('pos') || value.includes('bodega')) return 'empleado';
+    if (value.includes('comprador') || value.includes('cliente')) return 'comprador';
+    return value;
+  }
+
+  function getRole() {
+    return normalizeRole(localStorage.getItem('user_role'));
+  }
+
+  function canManage() {
+    const role = getRole();
+    return role === 'administrador' || role === 'productor';
+  }
+
+  async function hydrateRoleFromSession() {
+    const currentRole = getRole();
+    if (currentRole) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/google/sync`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      const backendRole = normalizeRole(data?.usuario?.rol);
+      if (backendRole) {
+        localStorage.setItem('user_role', backendRole);
+      }
+    } catch {
+      // Sin bloquear UI si no hay backend o token.
+    }
+  }
+
+  function setStatus(message) {
+    const statusEl = document.getElementById('producto-status');
+    if (statusEl) statusEl.textContent = message;
+  }
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('es-EC', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }
+
+  function badgeClass(estado) {
+    if (estado === 'publicado') return 'badge bg-green';
+    if (estado === 'agotado') return 'badge bg-red';
+    if (estado === 'inactivo') return 'badge bg-gray';
+    return 'badge bg-blue';
+  }
+
+  function filteredItems() {
+    const term = productosState.search.trim().toLowerCase();
+    if (!term) return productosState.items;
+
+    return productosState.items.filter((producto) => {
+      return [
+        producto.nombre,
+        producto.descripcion,
+        producto.categoria,
+        producto.estado,
+        producto.lote_id,
+      ].some((value) => String(value || '').toLowerCase().includes(term));
+    });
+  }
+
+  function syncPermissionButtons() {
+    const restrictedElements = document.querySelectorAll('.require-admin-prod');
+    const display = canManage() ? 'inline-flex' : 'none';
+    restrictedElements.forEach((element) => {
+      element.style.setProperty('display', display, 'important');
+    });
+
+    const addButton = document.getElementById('btn-agregar');
+    if (addButton) addButton.style.display = canManage() ? 'inline-flex' : 'none';
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('producto-table-body');
+    if (!tbody) return;
+
+    const productos = filteredItems();
+    tbody.innerHTML = '';
+
+    if (!productos.length) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.className = 'table-empty';
+      cell.textContent = productosState.items.length ? 'No hay productos que coincidan con el filtro.' : 'No existen productos registrados.';
+      row.appendChild(cell);
+      tbody.appendChild(row);
+      return;
+    }
+
+    for (const producto of productos) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${producto.nombre}</strong></td>
+        <td>${producto.descripcion || '-'}</td>
+        <td>${producto.categoria}</td>
+        <td>$ ${formatCurrency(producto.precio_base)}</td>
+        <td>${producto.stock_disponible}</td>
+        <td><span class="${badgeClass(producto.estado)}">${producto.estado}</span></td>
+        <td class="action-cells">
+          <button class="btn-icon" data-action="view" data-id="${producto.id}" title="Ver Detalles">👁️</button>
+          <button class="btn-icon require-admin-prod" data-action="edit" data-id="${producto.id}" title="Editar">✏️</button>
+          <button class="btn-icon require-admin-prod text-red" data-action="delete" data-id="${producto.id}" title="Eliminar">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    syncPermissionButtons();
+  }
+
+  function promptForProducto(existing) {
+    const lote_id = window.prompt('ID del lote', existing?.lote_id ?? '');
+    if (lote_id === null) return null;
+
+    const nombre = window.prompt('Nombre del producto', existing?.nombre ?? '');
+    if (!nombre) return null;
+
+    const descripcion = window.prompt('Descripción', existing?.descripcion ?? '') ?? '';
+    const categoria = window.prompt('Categoría', existing?.categoria ?? '');
+    if (!categoria) return null;
+
+    const imagenes = window.prompt('URLs de imágenes separadas por coma', existing?.imagenes?.join(', ') ?? '') ?? '';
+    const precio_base = window.prompt('Precio base', existing ? String(existing.precio_base) : '');
+    if (!precio_base) return null;
+
+    const stock_disponible = window.prompt('Stock disponible', existing ? String(existing.stock_disponible) : '');
+    if (!stock_disponible) return null;
+
+    const estado = window.prompt('Estado (borrador, publicado, agotado, inactivo)', existing?.estado ?? 'borrador');
+    if (!estado) return null;
+
+    const tx_hash = window.prompt('Hash de transacción', existing?.tx_hash ?? '') ?? '';
+
+    return {
+      lote_id,
+      nombre,
+      descripcion,
+      categoria,
+      imagenes: imagenes
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+      precio_base: Number(precio_base),
+      stock_disponible: Number(stock_disponible),
+      estado,
+      tx_hash: tx_hash || null,
+    };
+  }
+
+  async function loadProductos() {
+    setStatus('Cargando productos desde la base de datos...');
+    try {
+      productosState.items = await fetchProductos();
+      renderTable();
+      setStatus(`Se cargaron ${productosState.items.length} productos desde la base de datos.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible cargar los productos.';
+      setStatus(message);
+      renderTable();
+    }
+  }
+
+  async function handleCreate() {
+    if (!canManage()) return;
+
+    const payload = promptForProducto();
+    if (!payload) return;
+
+    try {
+      await createProducto(payload);
+      await loadProductos();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible crear el producto.';
+      window.alert(message);
+    }
+  }
+
+  async function handleEdit(id) {
+    if (!canManage()) return;
+
+    const existing = productosState.items.find((item) => item.id === id);
+    if (!existing) return;
+
+    const payload = promptForProducto(existing);
+    if (!payload) return;
+
+    try {
+      await updateProducto(id, payload);
+      await loadProductos();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible editar el producto.';
+      window.alert(message);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!canManage()) return;
+
+    const existing = productosState.items.find((item) => item.id === id);
+    if (!existing) return;
+
+    const confirmed = window.confirm(`¿Eliminar el producto ${existing.nombre}?`);
+    if (!confirmed) return;
+
+    try {
+      await deleteProducto(id);
+      await loadProductos();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible eliminar el producto.';
+      window.alert(message);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await hydrateRoleFromSession();
+    syncPermissionButtons();
+
+    document.getElementById('btn-agregar')?.addEventListener('click', handleCreate);
+    document.getElementById('btn-refrescar-productos')?.addEventListener('click', loadProductos);
+    document.getElementById('producto-search')?.addEventListener('input', (event) => {
+      const input = event.target;
+      if (input instanceof HTMLInputElement) {
+        productosState.search = input.value;
+        renderTable();
+      }
+    });
+
+    document.getElementById('producto-table-body')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const action = target.dataset.action;
+      const id = target.dataset.id;
+      if (!action || !id) return;
+
+      if (action === 'view') {
+        const producto = productosState.items.find((item) => item.id === id);
+        if (producto) window.alert(JSON.stringify(producto, null, 2));
+        return;
+      }
+
+      if (action === 'edit') {
+        void handleEdit(id);
+        return;
+      }
+
+      if (action === 'delete') {
+        void handleDelete(id);
+      }
+    });
+
+    await loadProductos();
+  });
+</script>
