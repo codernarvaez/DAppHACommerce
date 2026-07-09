@@ -95,6 +95,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { createProducto, deleteProducto, fetchProductos, updateProducto } from '../../lib/api/productos';
+  import { supabase } from '../../lib/supabase';
+
+  const API_URL = import.meta.env.PUBLIC_API_BASE_URL;
 
   const productosState = {
     items: [],
@@ -117,6 +120,32 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   function canManage() {
     const role = getRole();
     return role === 'administrador' || role === 'productor';
+  }
+
+  async function hydrateRoleFromSession() {
+    const currentRole = getRole();
+    if (currentRole) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/google/sync`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      const backendRole = normalizeRole(data?.usuario?.rol);
+      if (backendRole) {
+        localStorage.setItem('user_role', backendRole);
+      }
+    } catch {
+      // Sin bloquear UI si no hay backend o token.
+    }
   }
 
   function setStatus(message) {
@@ -307,6 +336,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    await hydrateRoleFromSession();
     syncPermissionButtons();
 
     document.getElementById('btn-agregar')?.addEventListener('click', handleCreate);

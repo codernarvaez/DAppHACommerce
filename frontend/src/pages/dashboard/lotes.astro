@@ -94,6 +94,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { createLote, deleteLote, fetchLotes, updateLote } from '../../lib/api/lotes';
+  import { supabase } from '../../lib/supabase';
+
+  const API_URL = import.meta.env.PUBLIC_API_BASE_URL;
 
   const lotesState = {
     items: [],
@@ -116,12 +119,32 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   function canManage() {
     const role = getRole();
     return role === 'administrador' || role === 'productor';
+  }
 
-    console.log({
-        localStorageRole: localStorage.getItem('user_role'),
-        normalizedRole: role,
-        canManage: result
-    });
+  async function hydrateRoleFromSession() {
+    const currentRole = getRole();
+    if (currentRole) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/google/sync`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      const backendRole = normalizeRole(data?.usuario?.rol);
+      if (backendRole) {
+        localStorage.setItem('user_role', backendRole);
+      }
+    } catch {
+      // Sin bloquear UI si no hay backend o token.
+    }
   }
 
   function setStatus(message) {
@@ -199,23 +222,15 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   function syncPermissionButtons() {
-    console.log("syncPermissionButtons ejecutado o");
-
     const restrictedElements = document.querySelectorAll('.require-admin-prod');
-    console.log("Elementos encontrados:", restrictedElements.length);
-
     const display = canManage() ? 'inline-flex' : 'none';
-    console.log("Display:", display);
-
     restrictedElements.forEach((element) => {
-        element.style.setProperty('display', display, 'important');
+      element.style.setProperty('display', display, 'important');
     });
 
     const addButton = document.getElementById('btn-agregar');
-    console.log("Botón agregar:", addButton);
-
     if (addButton) {
-        addButton.style.display = canManage() ? 'inline-flex' : 'none';
+      addButton.style.display = canManage() ? 'inline-flex' : 'none';
     }
   }
 
@@ -343,6 +358,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    await hydrateRoleFromSession();
     syncPermissionButtons();
 
     document.getElementById('btn-agregar')?.addEventListener('click', handleCreate);
