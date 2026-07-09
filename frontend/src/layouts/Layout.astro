@@ -1,9 +1,12 @@
 ---
 import * as i18nModule from '../lib/i18n';
+import type { Locale } from '../lib/i18n';
 import type { PrivacyMessages } from '../lib/i18n/privacy-messages';
 import CookieConsent from '../components/privacy/CookieConsent.astro';
 import { hasConsentDecision } from '../lib/privacy/consent';
 import Topbar from '../components/Topbar.astro';
+
+import '../styles/globals.css';
 
 interface Props {
 	locale: Locale;
@@ -37,12 +40,12 @@ const apiError = null;
 	</head>
 	<body>
 		<div class="page-shell">
-      		{/* Header global*/}
-      		<Topbar locale={locale} m={m} apiOnline={apiOnline} apiError={apiError} />
-      
-      	<slot />
-		{pm && <CookieConsent locale={locale} pm={pm} hasConsent={hasConsentDecision(consent)} />}
-    	</div>
+			{/* Header global*/}
+			<Topbar locale={locale} m={m} apiOnline={apiOnline} apiError={apiError} />
+
+			<slot />
+			{pm && <CookieConsent locale={locale} pm={pm} hasConsent={hasConsentDecision(consent)} />}
+		</div>
 	</body>
 </html>
 
