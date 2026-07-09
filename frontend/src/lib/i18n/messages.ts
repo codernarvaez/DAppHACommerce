@@ -160,8 +160,8 @@ export const es = {
 	login: {
 		name: 'Iniciar Sesión',
 		welcome: 'Bienvenido de Nuevo',
-		email: 'Correo Electrónico',
-		password: 'Contraseña',
+		email: 'Correo electronico',
+		password: 'Contrasena',
 		google: 'Continuar con Google',
 		text: 'No tienes cuenta?',
 		register: 'Regístrate',
