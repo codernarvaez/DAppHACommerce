@@ -1,7 +1,8 @@
 :root {
     --color-on-surface: #121212;
     --color-on-surface-variant: #666;
-    --color-outline: #999; /* icons */
+    --color-outline: #999;
+    /* icons */
     --color-surface-soft: rgba(18, 18, 18, 0.06);
     --color-secundary: #0d6f66;
     --color-white: #ffffff;
@@ -53,7 +54,7 @@
     flex-direction: row;
     gap: 20px;
     width: 100%;
-}  
+}
 
 .payment-card {
     font-family: 'Space Grotesk', sans-serif;
@@ -82,13 +83,15 @@
 
 .payment-card.selected {
     border-color: var(--color-on-surface);
-    background:  rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.72);
 }
+
 .icon {
     display: flex;
     width: 30px;
     height: 30px;
 }
+
 /* Form Inputs */
 .form-grid {
     display: grid;
@@ -357,6 +360,7 @@
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -368,6 +372,7 @@
     .payment-grid {
         flex-direction: column;
     }
+
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -485,7 +490,8 @@
     from {
         transform: scale(0);
     }
+
     to {
         transform: scale(1);
     }
-}
+}

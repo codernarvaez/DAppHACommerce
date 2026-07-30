@@ -1,15 +1,25 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { resolveLocale } from '../../lib/i18n';
+import { 
+    getI18n,
+    resolveLocale,
+    readConsent 
+} from '../../lib/i18n';
 
-const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, null);
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m } = getI18n(locale);
 ---
 
-<Layout locale={locale} title="Sincronizando cuenta...">
+<Layout
+    locale={locale}
+    title="Sincronizando cuenta..."
+    description="Sincronizando tu cuenta con CoffeeTrace Market."
+>
     <main class="callback-container">
         <div class="loader"></div>
-        <h2>Sincronizando tu cuenta con CoffeeTrace Market...</h2>
-        <p id="status-text">Por favor, espera un momento.</p>
+        <h2>{m.callback.loader}</h2>
+        <p id="status-text">{m.callback.statusText}</p>
     </main>
 </Layout>
 

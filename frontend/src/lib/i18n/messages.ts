@@ -165,11 +165,15 @@ export const es = {
 	login: {
 		name: 'Iniciar Sesión',
 		welcome: 'Bienvenido de Nuevo',
-		email: 'Correo Electrónico',
-		password: 'Contraseña',
+		email: 'Correo electronico',
+		password: 'Contrasena',
 		google: 'Continuar con Google',
 		text: 'No tienes cuenta?',
 		register: 'Regístrate',
+	},
+	callback: {
+		loader: 'Sincronizando tu cuenta con CoffeeTrace Market...',
+		statusText: 'Por favor, espera un momento.',
 	}
 };
 
@@ -342,6 +346,10 @@ export const en: typeof es = {
 		google: 'Continue with Google',
 		text: "Don't have an account?",
 		register: "Sign Up",
+	},
+	callback: {
+		loader: 'Syncing your account with CoffeeTrace Market...',
+		statusText: 'Please wait a moment.',
 	}
 };
 
@@ -511,7 +519,11 @@ export const zh: typeof es = {
 		google: '使用 Google 继续',
 		text: "还没有账号？",
 		register: "注册"
-	}
+	},
+	callback: {
+		loader: '正在将您的账户与 CoffeeTrace Market 同步...',
+		statusText: '请稍候。',
+	}	
 };
 
 export const fr: typeof es = {
@@ -685,7 +697,11 @@ export const fr: typeof es = {
 		google: 'Continuer avec Google',
 		text: "Vous n'avez pas de compte ?",
 		register: "S'inscrire",		
-	}	
+	},
+	callback: {
+		loader: 'Synchronisation de votre compte avec CoffeeTrace Market...',
+		statusText: 'Veuillez patienter un instant.',
+	}		
 };
 
 export const ru: typeof es = {
@@ -862,6 +878,10 @@ export const ru: typeof es = {
 		google: 'Продолжить с Google',
 		text: "Нет аккаунта?",
 		register: "Зарегистрироваться",
+	},
+	callback: {
+		loader: 'Синхронизация вашей учетной записи с CoffeeTrace Market...',
+		statusText: 'Пожалуйста, подождите немного.',
 	}	
 };
 

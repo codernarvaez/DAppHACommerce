@@ -1,0 +1,335 @@
+---
+import { Icon } from 'astro-icon/components';
+import '../../styles/globals.css';
+import './signup.css';
+import Layout from '../../layouts/Layout.astro';
+
+import { 
+    getI18n,
+    resolveLocale,
+    readConsent 
+} from '../../lib/i18n';
+
+const consent = readConsent(Astro.cookies);
+const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
+const { m, em } = getI18n(locale);
+
+---
+<Layout
+	locale={locale}
+	title='SignUp',
+	description='',
+	consent={consent}
+>
+<div class="signup-page">
+    <div class="signup-header">
+        <Icon name="coffee" class="icon"/>
+        <span>CoffeeTrace Market</span>
+    </div>
+    <div class="profile-card">
+        <p class="subtitle">Completa tu información de perfil para activar tu cuenta en la plataforma.</p>
+    </div>
+    <div
+        id="signup-copy"
+        hidden
+        data-invalid-credentials="Credenciales inválidas o cuenta no encontrada."
+        data-not-login="No se pudo completar el registro. Intenta nuevamente."
+        data-signup-success="Registro exitoso. Redirigiendo..."
+        data-required-fields="Completa todos los campos obligatorios."
+        data-invalid-email="Ingresa un correo electrónico válido."
+        data-password-length="La contraseña debe tener al menos 6 caracteres."
+        data-backend-error="Error al guardar tu perfil. Intenta nuevamente."
+    ></div>
+    <form class="signup-form" novalidate>
+        <div class="error" id="signup-error-box" hidden role="alert" aria-live="polite">
+            <Icon name="error" class="icon-error" />
+            <p class="signup-error" id="signup-error" aria-live="polite"></p>
+        </div>
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="nombres">Nombres</label>
+                <input 
+                    type="text" 
+                    id="nombres" 
+                    required 
+                    placeholder="Tus nombres" 
+                    autocomplete="given-name" 
+                    class="form-input"    
+                />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="apellidos">Apellidos</label>
+                <input 
+                    type="text" 
+                    id="apellidos" 
+                    required 
+                    placeholder="Tus apellidos" 
+                    autocomplete="family-name" 
+                    class="form-input"
+                />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="email">
+                    {m.login.email}
+                </label>
+                <input 
+                    id="email" 
+                    type="email"
+                    placeholder={m.login.email} 
+                    required 
+                    class="form-input"
+                    autocomplete="email"
+                    aria-describedby="signup-error"
+                />
+                <span class="input-icon">
+                    <Icon name="email" class="icon"/> 
+                </span>
+            </div>
+        </div>    
+        
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="password">{m.login.password}</label>
+                <input 
+                    id="password" 
+                    type="password"
+                    placeholder={m.login.password}  
+                    required 
+                    class="form-input"
+                    autocomplete="new-password"
+                    aria-describedby="signup-error"
+                />
+                <button
+                    type="button"
+                    class="input-icon toggle-password"
+                    id="btn-eye"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                >
+                    <span id="icon-eye">
+                        <Icon name="eye" class="icon" />
+                    </span>
+
+                    <span id="icon-eye-off" hidden>
+                        <Icon name="eye-off" class="icon-eye-off" />
+                    </span>
+                </button>
+            </div>
+        </div>        
+
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="telefono">Teléfono</label>
+                <input
+                    type="tel"
+                    id="telefono"
+                    required
+                    placeholder="Ej: 0999999999"
+                    pattern="^[0-9]{7,10}$"
+                    title="Ingresa solo números (7 a 10 dígitos)"
+                    autocomplete="tel"
+                    class="form-input"
+                />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="rol">¿Cuál es tu rol?</label>
+                <select id="rol" required>
+                    <option value="comprador">Comprador / Cliente</option>
+                    <option value="productor">Productor de Café</option>
+                    <option value="empleado">Personal Interno (POS/Bodega)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-with-icon">
+                <label for="wallet">Dirección de Billetera Web3 (Opcional)</label>
+                <input
+                    type="text"
+                    id="wallet"
+                    placeholder="0x..."
+                    pattern="^0x[a-fA-F0-9]{40}$"
+                    title="Debe ser una dirección Ethereum válida (0x seguido de 40 caracteres hexadecimales)"
+                    class="form-input"
+                />
+            </div>
+        </div>
+
+        <button type="submit" id="btn-submit" class="btn-register">Finalizar Registro</button>
+    </form>
+</div>
+
+<script>
+    import { supabase } from '../../lib/supabase';
+    import { getApiBaseUrl } from '../../lib/config';
+
+    const signupCopy = document.querySelector('#signup-copy');
+    const nombresInput = document.querySelector('#nombres');
+    const apellidosInput = document.querySelector('#apellidos');
+    const emailInput = document.querySelector('#email');
+    const passwordInput = document.querySelector('#password');
+    const telefonoInput = document.querySelector('#telefono');
+    const rolSelect = document.querySelector('#rol');
+    const walletInput = document.querySelector('#wallet');
+    const signupForm = document.querySelector('.signup-form');
+    const signupError = document.querySelector('#signup-error');
+    const signupErrorBox = document.querySelector('#signup-error-box');
+    const togglePasswordBtn = document.querySelector('#btn-eye');
+    const eye = document.getElementById('icon-eye');
+    const eyeOff = document.getElementById('icon-eye-off');
+    const btnSubmit = document.querySelector('#btn-submit');
+
+    const getCopy = (key: string, fallback: string): string => {
+        if (!(signupCopy instanceof HTMLElement)) {
+            return fallback;
+        }
+
+        const value = signupCopy.dataset[key];
+        return typeof value === 'string' && value.length > 0 ? value : fallback;
+    };
+
+    const clearError = () => {
+        if (signupError) {
+            signupError.textContent = '';
+        }
+        if (signupErrorBox instanceof HTMLElement) {
+            signupErrorBox.hidden = true;
+        }
+    };
+
+    const showError = (message: string) => {
+        if (signupError) {
+            signupError.textContent = message;
+        }
+        if (signupErrorBox instanceof HTMLElement) {
+            signupErrorBox.hidden = false;
+        }
+    };
+
+    signupForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (
+            !(nombresInput instanceof HTMLInputElement) ||
+            !(apellidosInput instanceof HTMLInputElement) ||
+            !(emailInput instanceof HTMLInputElement) ||
+            !(passwordInput instanceof HTMLInputElement) ||
+            !(telefonoInput instanceof HTMLInputElement) ||
+            !(rolSelect instanceof HTMLSelectElement)
+        ) {
+            return;
+        }
+
+        clearError();
+
+        // --- Client-side validation ---
+        const nombres = nombresInput.value.trim();
+        const apellidos = apellidosInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const telefono = telefonoInput.value.trim();
+        const rol = rolSelect.value;
+        const wallet = walletInput instanceof HTMLInputElement ? walletInput.value.trim() : '';
+
+        if (!nombres || !apellidos || !email || !password || !telefono || !rol) {
+            showError(getCopy('requiredFields', 'Completa todos los campos obligatorios.'));
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showError(getCopy('invalidEmail', 'Ingresa un correo electrónico válido.'));
+            return;
+        }
+
+        if (password.length < 6) {
+            showError(getCopy('passwordLength', 'La contraseña debe tener al menos 6 caracteres.'));
+            return;
+        }
+
+        // --- Disable button to prevent double submit ---
+        if (btnSubmit instanceof HTMLButtonElement) {
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Registrando...';
+        }
+
+        // --- 1. Call the backend to create user + profile ---
+        try {
+            const baseUrl = getApiBaseUrl().replace(/\/$/, '');
+            const response = await fetch(`${baseUrl}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombres,
+                    apellidos,
+                    email,
+                    password,
+                    telefono,
+                    rol,
+                    wallet_address: wallet || null,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({}));
+                const detail = errorBody.detail || 'Error al registrar.';
+                throw new Error(detail);
+            }
+
+            // --- 2. Success: sign in automatically and redirect ---
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (signInError) {
+                // If auto sign-in fails, redirect to login page
+                window.location.href = '/auth/login';
+                return;
+            }
+
+            window.location.href = '/';
+        } catch (err) {
+            const message = err instanceof Error
+                ? err.message
+                : getCopy('backendError', 'Error al registrar. Intenta nuevamente.');
+            showError(message);
+            if (btnSubmit instanceof HTMLButtonElement) {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Finalizar Registro';
+            }
+        }
+    });
+
+    const togglePasswordVisibility = () => {
+        if (!(passwordInput instanceof HTMLInputElement) || !(togglePasswordBtn instanceof HTMLButtonElement)) return;
+
+        const shouldShowPassword = passwordInput.type === 'password';
+        passwordInput.type = shouldShowPassword ? 'text' : 'password';
+
+        togglePasswordBtn.setAttribute('aria-pressed', String(shouldShowPassword));
+        togglePasswordBtn.setAttribute(
+            'aria-label',
+            shouldShowPassword ? 'Hide password' : 'Show password'
+        );
+
+        if (eye instanceof HTMLElement && eyeOff instanceof HTMLElement) {
+            eye.hidden = shouldShowPassword;
+            eyeOff.hidden = !shouldShowPassword;
+        }
+    };
+
+    togglePasswordBtn?.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+    });
+
+    togglePasswordBtn?.addEventListener('click', togglePasswordVisibility);
+</script>

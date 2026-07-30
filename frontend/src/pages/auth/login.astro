@@ -2,6 +2,7 @@
 import { Icon } from 'astro-icon/components';
 import '../../styles/globals.css';
 import './login.css';
+import Layout from '../../layouts/Layout.astro';
 
 import { 
     getI18n,
@@ -14,12 +15,13 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m, em } = getI18n(locale);
 
 ---
+<Layout
+	locale={locale}
+	title='Login',
+	description='',
+	consent={consent}
+>
 <div class="auth-page">
-    <div class="back">
-        <a href="/" class="back-to-top" aria-label="Volver al inicio">
-            <Icon name="times" class="icon"/>
-        </a>
-    </div>
     <div class="auth-header">
         <Icon name="coffee" class="icon"/>
         <span>CoffeeTrace Market</span>
@@ -76,7 +78,6 @@ const { m, em } = getI18n(locale);
                     id="btn-eye"
                     aria-label="Show password"
                     aria-pressed="false"
-                    style="z-index: 2;"
                 >
                     <span id="icon-eye">
                         <Icon name="eye" class="icon" />
@@ -99,11 +100,9 @@ const { m, em } = getI18n(locale);
         <Icon name="google" class="icon"/> 
         {m.login.google}
     </button>
-<!--
     <p class="auth-link">
-        {m.login.text} <a href="/register" class="register">{m.login.register}</a>
+        {m.login.text} <a href="/auth/signup" class="register">{m.login.register}</a>
     </p>
--->
 </div>
 
 <script>
