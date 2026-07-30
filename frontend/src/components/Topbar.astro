@@ -23,7 +23,7 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     <a href="/#market">{m.nav.market}</a>
     <a href="/#auctions">{m.nav.auctions}</a>
     <a href="/#wallet">{m.nav.wallet}</a>
-    <a href="/#profile">{m.nav.profile}</a>
+    <a href="/#profile" data-profile-link>{m.nav.profile}</a>
     <button type="button" class="sample-link" data-open-sample>{m.nav.sampleRequest ?? 'Solicitar muestra'}</button>
   </nav>
   <div class="topbar-actions">
@@ -108,9 +108,15 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     closeSampleModal();
   });
 
+  const getCookie = (name: string) => {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
+  };
+
   const updateLoginVisibility = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    const geoguardToken = getCookie('geoguard_token') || localStorage.getItem('geoguard_token');
+    if (session || geoguardToken) {
       loginLink?.remove();
     }
   };
@@ -121,6 +127,15 @@ const { locale, m, apiOnline, apiError} = Astro.props;
     if (session) {
       loginLink?.remove();
     }
+  });
+
+  // Profile link: redirect based on auth state
+  const profileLink = document.querySelector('[data-profile-link]');
+  profileLink?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const { data: { session } } = await supabase.auth.getSession();
+    const geoguardToken = getCookie('geoguard_token') || localStorage.getItem('geoguard_token');
+    window.location.href = (session || geoguardToken) ? '/dashboard' : '/auth/login';
   });
 </script>
 

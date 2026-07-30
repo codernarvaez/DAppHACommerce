@@ -158,29 +158,81 @@ const { m, em } = getI18n(locale);
         const email = emailInput.value.trim();
         const password = passwordInput.value;
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        let response = null;
+        let responseData = null;
 
-        if (error) {
-            const normalizedMessage = (error.message ?? '').toLowerCase();
-            const isInvalidCredentials =
-                error.code === 'invalid_credentials' ||
-                error.status === 400 ||
-                normalizedMessage.includes('invalid login credentials');
-
-            const message = isInvalidCredentials
-                ? getCopy('invalidCredentials', 'Credenciales inválidas o cuenta no encontrada.')
-                : getCopy('notLogin', 'No se pudo iniciar sesión. Intenta nuevamente.');
-
-            showAuthError(message);
-            return;
+        // Attempt 1: JSON {"email", "password"}
+        try {
+            response = await fetch('https://huellaaltura.onrender.com/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            if (response.status !== 422) {
+                responseData = await response.json();
+            }
+        } catch (e) {
+            console.error('Attempt 1 failed', e);
         }
 
-        if (data.session) {
-            window.location.href = '/';
+        // Attempt 2: JSON {"username", "password"}
+        if (!responseData || !response.ok) {
+            try {
+                response = await fetch('https://huellaaltura.onrender.com/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: email, password })
+                });
+                if (response.status !== 422) {
+                    responseData = await response.json();
+                }
+            } catch (e) {
+                console.error('Attempt 2 failed', e);
+            }
         }
+
+        // Attempt 3: Form urlencoded username/password (FastAPI standard)
+        if (!responseData || !response.ok) {
+            try {
+                const params = new URLSearchParams();
+                params.append('username', email);
+                params.append('password', password);
+                response = await fetch('https://huellaaltura.onrender.com/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                responseData = await response.json();
+            } catch (e) {
+                console.error('Attempt 3 failed', e);
+            }
+        }
+
+        if (response && response.ok && responseData) {
+            const token = responseData.access_token || responseData.token || (responseData.data && responseData.data.token);
+            if (token) {
+                // Store in cookie
+                document.cookie = `geoguard_token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`;
+                // Store in localStorage as backup
+                localStorage.setItem('geoguard_token', token);
+                
+                // Decode token for user details
+                let role = 'Usuario';
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    role = payload.role || 'Usuario';
+                } catch (e) {
+                    console.error('Error decoding token payload', e);
+                }
+                localStorage.setItem('user_role', role);
+
+                window.location.href = '/dashboard';
+                return;
+            }
+        }
+
+        const errMsg = (responseData && (responseData.detail || responseData.message)) || 'Credenciales inválidas o error al conectar.';
+        showAuthError(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
     });
 
     const togglePasswordVisibility = () => {

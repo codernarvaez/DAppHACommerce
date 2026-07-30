@@ -24,12 +24,16 @@ interface PaymentMethod {
 interface Props {
     methods: PaymentMethod[];
     selectedMethod?: string;
+    stripePublicKey?: string;
+    total?: number;
 }
+
+const { methods, selectedMethod = 'card', stripePublicKey = '', total = 0 } = Astro.props;
 
 ---
 
 <!-- Payment Methods Selection -->
-<div class="payment-methods">
+<div class="payment-methods" data-stripe-key={stripePublicKey} data-total={total}>
     <div class="payment-header">
         <h2>{m.checkout.paymentMethods.title}</h2>
         <p>{m.checkout.paymentMethods.subtitle}</p>
@@ -91,44 +95,13 @@ interface Props {
                 />
             </div>
 
-            <!-- Card Number -->
-            <div class="form-group full-width">
-                <label for="card-number">{m.checkout.paymentForms.card.cardNumber}</label>
-                <div class="input-with-icon">
-                    <input
-                        id="card-number"
-                        type="text"
-                        placeholder="0000 0000 0000 0000"
-                        class="form-input"
-                        maxlength="19"
-                    />
-                    <span class="input-icon">
-                        <Icon name="card-outline" class="icon"/>
-                    </span>
+            <!-- Stripe Card Element -->
+            <div class="form-group full-width" style="margin-top: 16px;">
+                <label for="card-element">Información de Tarjeta (Stripe Sandbox)</label>
+                <div id="card-element" class="form-input" style="padding: 12px; background: white; border: 1px solid #d7dbd6; border-radius: 10px;">
+                    <!-- Stripe Card Element will mount here -->
                 </div>
-            </div>
-
-            <!-- Expiration & CVC -->
-            <div class="form-group">
-                <label for="card-expiry">{m.checkout.paymentForms.card.cardExpiry}</label>
-                <input
-                    id="card-expiry"
-                    type="text"
-                    placeholder="MM / AA"
-                    class="form-input"
-                    maxlength="5"
-                />
-            </div>
-
-            <div class="form-group">
-                <label for="card-cvc">{m.checkout.paymentForms.card.cardCvc}</label>
-                <input
-                    id="card-cvc"
-                    type="password"
-                    placeholder="***"
-                    class="form-input"
-                    maxlength="4"
-                />
+                <div id="card-errors" role="alert" style="color: #b91c1c; font-size: 0.85rem; margin-top: 8px;"></div>
             </div>
         </div>
 
@@ -202,17 +175,99 @@ interface Props {
 	</div>
 </div>
 
+<!-- Transaction Status Modal -->
+<div class="status-modal-overlay" id="payment-status-modal">
+    <div class="status-modal-card">
+        <div class="status-icon-wrapper" id="modal-status-icon">
+            <!-- Icon mounted dynamically -->
+        </div>
+        <h2 id="modal-status-title">Estado de Pago</h2>
+        <p id="modal-status-message">Tu transacción se está procesando.</p>
+        <button class="status-modal-btn" id="modal-close-btn">Aceptar</button>
+    </div>
+</div>
+
 <script>
-	document.addEventListener('DOMContentLoaded', () => {
-		selectPaymentMethod('card');
-	});
+    import { supabase } from '../../lib/supabase';
+
+    const getCookie = (name: string) => {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    };
+
+    const getAuthToken = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+            return session.access_token;
+        }
+        return getCookie('geoguard_token') || localStorage.getItem('geoguard_token');
+    };
+
+    // State
+    let selectedMethod = 'card';
+    let stripe: any = null;
+    let cardElement: any = null;
+
+    // Get parameters from container
+    const container = document.querySelector('.payment-methods');
+    const stripeKey = container?.getAttribute('data-stripe-key');
+    const total = parseFloat(container?.getAttribute('data-total') || '0');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        selectPaymentMethod('card');
+        initializeStripe();
+    });
+
+    function initializeStripe() {
+        if (!stripeKey) {
+            console.error('Stripe public key is missing.');
+            return;
+        }
+
+        const stripeObj = (window as any).Stripe;
+        if (!stripeObj) {
+            console.error('Stripe.js was not loaded.');
+            return;
+        }
+
+        stripe = stripeObj(stripeKey);
+        const elements = stripe.elements();
+
+        const style = {
+            base: {
+                fontSize: '16px',
+                color: '#121212',
+                fontFamily: 'Manrope, sans-serif',
+                '::placeholder': {
+                    color: '#9ca3af',
+                },
+            },
+            invalid: {
+                color: '#b91c1c',
+            },
+        };
+
+        cardElement = elements.create('card', { 
+            style,
+            disableLink: true 
+        });
+        cardElement.mount('#card-element');
+
+        cardElement.on('change', (event: any) => {
+            const displayError = document.getElementById('card-errors');
+            if (displayError) {
+                displayError.textContent = event.error ? event.error.message : '';
+            }
+        });
+    }
 
     // Payment method selection
     document.querySelectorAll('[data-method]').forEach((btn) => {
         const button = btn as HTMLElement;
         button.addEventListener('click', () => {
             const method = button.getAttribute('data-method');
-            selectPaymentMethod(method || '');
+            selectedMethod = method || 'card';
+            selectPaymentMethod(selectedMethod);
         });
     });
 
@@ -240,27 +295,125 @@ interface Props {
         });
     }
 
-    // Format card number
-    const cardNumberInput = document.getElementById('card-number') as HTMLInputElement;
-    if (cardNumberInput) {
-        cardNumberInput.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            let value = target.value.replace(/\s/g, '');
-            let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
-            target.value = formatted;
+    // Handle Payment Confirmation
+    const confirmBtn = document.querySelector('.payment-confirm-btn') as HTMLButtonElement;
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            if (selectedMethod !== 'card') {
+                showStatusModal('error', 'Método no disponible', `El método de pago ${selectedMethod} no está integrado con pasarela real aún. Por favor utiliza Tarjeta.`);
+                return;
+            }
+
+            if (!stripe || !cardElement) {
+                showStatusModal('error', 'Error de Stripe', 'La pasarela de Stripe no está inicializada correctamente.');
+                return;
+            }
+
+            const cardHolder = (document.getElementById('card-holder') as HTMLInputElement)?.value.trim();
+            if (!cardHolder) {
+                showStatusModal('error', 'Datos Faltantes', 'Por favor ingresa el nombre del titular de la tarjeta.');
+                return;
+            }
+
+            // Disable button
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Procesando Pago...';
+            const errorDisplay = document.getElementById('card-errors');
+            if (errorDisplay) errorDisplay.textContent = '';
+
+            try {
+                // Get auth header value
+                const token = await getAuthToken();
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                // Request payment intent client secret
+                const response = await fetch('/api/pagos/create-payment-intent', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        monto: total,
+                        moneda: 'usd',
+                        direccion_envio: 'Dirección de entrega de pruebas'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Error al crear el PaymentIntent en el servidor.');
+                }
+
+                const intentData = await response.json();
+                const clientSecret = intentData.client_secret;
+
+                // Confirm payment with Stripe
+                const result = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: cardHolder
+                        }
+                    }
+                });
+
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
+
+                if (result.paymentIntent.status === 'succeeded') {
+                    showStatusModal('success', '¡Pago Exitoso!', 'Tu pedido ha sido procesado con éxito. Puedes ver los detalles en tu panel.');
+                }
+            } catch (err: any) {
+                console.error(err);
+                showStatusModal('error', 'Error en Transacción', err.message || 'Ocurrió un error inesperado al procesar el pago.');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirmar y Pagar';
+            }
         });
     }
 
-    // Format expiry (MM/AA)
-    const expiryInput = document.getElementById('card-expiry') as HTMLInputElement;
-    if (expiryInput) {
-        expiryInput.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            let value = target.value.replace(/\D/g, '');
-            if (value.length >= 2) {
-                value = value.slice(0, 2) + ' / ' + value.slice(2, 4);
+    // Modal Control logic
+    const modal = document.getElementById('payment-status-modal');
+    const modalIcon = document.getElementById('modal-status-icon');
+    const modalTitle = document.getElementById('modal-status-title');
+    const modalMessage = document.getElementById('modal-status-message');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    let isSuccessRedirect = false;
+
+    function showStatusModal(type: 'success' | 'error', title: string, message: string) {
+        if (!modal || !modalIcon || !modalTitle || !modalMessage) return;
+
+        // Reset classes
+        modalIcon.className = 'status-icon-wrapper';
+        
+        if (type === 'success') {
+            modalIcon.classList.add('success');
+            modalIcon.innerHTML = '✓';
+            isSuccessRedirect = true;
+        } else {
+            modalIcon.classList.add('error');
+            modalIcon.innerHTML = '✗';
+            isSuccessRedirect = false;
+        }
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modal.classList.add('active');
+    }
+
+    if (modalCloseBtn) {
+        modalCloseBtn.addEventListener('click', () => {
+            modal?.classList.remove('active');
+            if (isSuccessRedirect) {
+                window.location.href = '/';
             }
-            target.value = value;
         });
     }
 </script>

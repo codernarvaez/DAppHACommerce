@@ -10,19 +10,84 @@ import {
     readConsent 
 } from '../lib/i18n';
 
+import { fetchBodega, fetchCompras, fetchCompraPorMuestra } from '../lib/api/geoguard';
+import type { BodegaItem, CompraItem } from '../lib/api/geoguard';
+
 const consent = readConsent(Astro.cookies);
 const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m } = getI18n(locale);
 
-// Capturar parámetros URL dinámicos enviados desde el index
-const title = Astro.url.searchParams.get('title') || 'Café Tostado Origen Loja - Altura';
-const description = Astro.url.searchParams.get('description') || 'Café de especialidad con notas a chocolate y acidez cítrica.';
-const price = Astro.url.searchParams.get('price') || '$15.50';
-const stock = Astro.url.searchParams.get('stock') || '45 u.';
+// Fetch real data based on bodegaId query param
+const bodegaId = Astro.url.searchParams.get('bodegaId');
+
+let title = 'Café — Detalle del Lote';
+let description = '';
+let price = '$0.00';
+let stock = '0 kg';
+let weight = '0 kg';
+let eudrApproved = false;
+let primas = 0;
+let estado = 'DESCONOCIDO';
+let muestraDetail: CompraItem | null = null;
+let bodegaItem: BodegaItem | null = null;
+
+const ESTADO_LABELS: Record<string, string> = {
+	'RECEPCION': 'Recepción',
+	'EN_TRILLA': 'En Trilla',
+	'EN_SECADO': 'En Secado',
+	'EN_BODEGA': 'En Bodega',
+	'TOSTADO': 'Tostado',
+	'MOLIDO': 'Molido',
+	'DESPACHADO': 'Despachado',
+};
+
+if (bodegaId) {
+	try {
+		const geoguardToken = Astro.cookies.get('geoguard_token')?.value;
+		const [bodegaItems, compraItems] = await Promise.all([
+			fetchBodega(geoguardToken),
+			fetchCompras(geoguardToken)
+		]);
+
+		bodegaItem = bodegaItems.find((b) => b.id === bodegaId) || null;
+
+		if (bodegaItem) {
+			const compra = compraItems.find((c) => c.id === bodegaItem!.ordenCompraId);
+			const estadoLabel = ESTADO_LABELS[bodegaItem.estado] || bodegaItem.estado;
+			estado = bodegaItem.estado;
+
+			title = `Café ${estadoLabel} — Lote ${bodegaItem.id.slice(0, 6).toUpperCase()}`;
+			stock = `${bodegaItem.pesoIngresoKg} kg`;
+
+			if (compra) {
+				price = `$${Number(compra.precioAcordado).toFixed(2)}`;
+				weight = `${compra.volumenKg} kg`;
+				eudrApproved = compra.aprobadoEUDR;
+				primas = compra.primas;
+
+				// Fetch muestra detail
+				if (compra.muestraId) {
+					try {
+						muestraDetail = await fetchCompraPorMuestra(compra.muestraId, geoguardToken);
+					} catch (e) {
+						console.error('Error fetching muestra detail:', e);
+					}
+				}
+
+				description = `Precio acordado: $${compra.precioAcordado} · Volumen: ${compra.volumenKg} kg · Primas: $${compra.primas} · EUDR: ${compra.aprobadoEUDR ? '✓ Aprobado' : '✗ Pendiente'} · Estado compra: ${compra.estado}`;
+			} else {
+				description = `Peso ingreso: ${bodegaItem.pesoIngresoKg} kg · Estado: ${estadoLabel}`;
+			}
+		}
+	} catch (err) {
+		console.error('Error loading product detail:', err);
+		description = 'Error al cargar datos del producto.';
+	}
+}
 
 const checkoutSteps = [
-  { label: m.checkoutSteps.detail, url: '/product-detail' },
-
+  { label: m.checkoutSteps.detail, url: `/product-detail?bodegaId=${bodegaId || ''}` },
+  { label: m.checkoutSteps.pay, url: `/checkout` },
 ];
 ---
 
@@ -32,19 +97,60 @@ const checkoutSteps = [
 
     <div class="main-grid">
       <section class="info-section">
-        {/* <div class="badge-origin">✓ Certified Origin</div> */}
-        <h1 class="product-title">{title}</h1>
-        <p class="product-description">{description}</p>
-        
-        <div class="product-media-placeholder">
-          <span>[ Vista de Trazabilidad del Lote ]</span>
+        <div class="badge-row">
+          <span class={`estado-badge estado-${estado}`}>{ESTADO_LABELS[estado] || estado}</span>
+          {eudrApproved && <span class="badge-origin">✓ EUDR Aprobado</span>}
         </div>
+        <h1 class="product-title">{title}</h1>
+        
+        {muestraDetail && (
+          <div class="muestra-detail">
+            <h3>Detalle de la Muestra</h3>
+            <div class="muestra-grid">
+              <div class="muestra-field">
+                <span class="muestra-label">ID Muestra</span>
+                <strong>{muestraDetail.muestraId.slice(0, 8)}...</strong>
+              </div>
+              <div class="muestra-field">
+                <span class="muestra-label">Precio Acordado</span>
+                <strong>${Number(muestraDetail.precioAcordado).toFixed(2)}</strong>
+              </div>
+              <div class="muestra-field">
+                <span class="muestra-label">Volumen</span>
+                <strong>{muestraDetail.volumenKg} kg</strong>
+              </div>
+              <div class="muestra-field">
+                <span class="muestra-label">Primas</span>
+                <strong>${Number(muestraDetail.primas).toFixed(2)}</strong>
+              </div>
+              <div class="muestra-field">
+                <span class="muestra-label">EUDR</span>
+                <strong class={muestraDetail.aprobadoEUDR ? 'eudr-approved' : 'eudr-pending'}>
+                  {muestraDetail.aprobadoEUDR ? '✓ Aprobado' : '✗ Pendiente'}
+                </strong>
+              </div>
+              <div class="muestra-field">
+                <span class="muestra-label">Estado</span>
+                <strong>{muestraDetail.estado}</strong>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <ProductionChronology />
+        <ProductionChronology estado={estado} />
       </section>
 
       <aside>
-        <PurchasePanel price={price} stock={stock} />
+        <PurchasePanel 
+          price={price} 
+          stock={stock} 
+          weight={weight}
+          eudrApproved={eudrApproved}
+          primas={primas}
+          estado={estado}
+          productName={title}
+          bodegaId={bodegaId}
+        />
       </aside>
     </div>
   </main>
@@ -64,7 +170,6 @@ const checkoutSteps = [
     max-width: 1200px;
     margin: 0 auto;
     padding: 40px 20px;
-    
     animation: fadeIn 0.4s ease-out;
   }
   .main-grid {
@@ -72,6 +177,12 @@ const checkoutSteps = [
     grid-template-columns: 1fr 360px;
     gap: 40px;
     align-items: start;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
   }
   .badge-origin {
     display: inline-block;
@@ -82,8 +193,24 @@ const checkoutSteps = [
     padding: 6px 12px;
     border-radius: 20px;
     text-transform: uppercase;
-    margin-bottom: 12px;
   }
+  .estado-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #6b7280;
+  }
+  .estado-badge.estado-RECEPCION  { background: #475569; }
+  .estado-badge.estado-EN_SECADO  { background: #d97706; }
+  .estado-badge.estado-EN_TRILLA  { background: #ea580c; }
+  .estado-badge.estado-EN_BODEGA  { background: #16a34a; }
+  .estado-badge.estado-TOSTADO    { background: #92400e; }
+  .estado-badge.estado-MOLIDO     { background: #9333ea; }
+  .estado-badge.estado-DESPACHADO { background: #0d9488; }
   .product-title {
     font-size: 2.5rem;
     font-weight: 800;
@@ -91,27 +218,53 @@ const checkoutSteps = [
     line-height: 1.1;
     margin-bottom: 8px;
   }
-  .product-description {
-    font-size: 1.1rem;
-    color: #4b5563;
-    margin-bottom: 24px;
-    max-width: 600px;
-  }
-  .product-media-placeholder {
-    width: 100%;
-    height: 350px;
-    background: #eaeaea;
+  .muestra-detail {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .muestra-detail h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+    color: #111827;
+  }
+  .muestra-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .muestra-field {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #71717a;
-    font-weight: 500;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .muestra-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #9ca3af;
+    letter-spacing: 0.05em;
+  }
+  .muestra-field strong {
+    font-size: 0.95rem;
+    color: #111827;
+  }
+  .eudr-approved {
+    color: #137333 !important;
+  }
+  .eudr-pending {
+    color: #b91c1c !important;
   }
 
   @media (max-width: 900px) {
     .main-grid {
       grid-template-columns: 1fr;
+    }
+    .muestra-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 

@@ -13,36 +13,75 @@ const { m } = getI18n(locale);
 interface Props {
   price: string;
   stock: string;
+  weight?: string;
+  eudrApproved?: boolean;
+  primas?: number;
+  estado?: string;
+  productName?: string;
+  bodegaId?: string;
 }
 
-const { price, stock } = Astro.props;
+const { price, stock, weight, eudrApproved = false, primas = 0, estado = '', productName = 'Café', bodegaId = '' } = Astro.props;
+
+const ESTADO_LABELS: Record<string, string> = {
+  'EN_TRILLA': 'En Trilla',
+  'EN_SECADO': 'En Secado',
+  'EN_BODEGA': 'En Bodega',
+  'TOSTADO': 'Tostado',
+  'MOLIDO': 'Molido',
+  'DESPACHADO': 'Despachado',
+};
+
+const estadoLabel = ESTADO_LABELS[estado] || estado;
+
+// Build checkout URL with product data
+const checkoutParams = new URLSearchParams({
+  nombre: productName,
+  precio: price.replace('$', ''),
+  volumen: stock.replace(' kg', ''),
+  estado: estado,
+  eudr: eudrApproved ? '1' : '0',
+  primas: String(primas),
+  peso: (weight || stock).replace(' kg', ''),
+  bodegaId: bodegaId,
+});
+const checkoutUrl = `/checkout?${checkoutParams.toString()}`;
 ---
 
 <div class="purchase-card">
   <div class="price-section">
     <span class="label">{m.productDetail.purchase.price}</span>
     <div class="price-val">{price || "$0.00"}</div>
+    {primas > 0 && (
+      <span class="primas-badge">+ ${Number(primas).toFixed(2)} primas</span>
+    )}
   </div>
 
   <div class="meta-row">
     <div>
       <span class="label">{m.productDetail.purchase.weight}</span>
-      <strong>120 kg</strong>
+      <strong>{weight || stock || "0 kg"}</strong>
     </div>
     <div>
       <span class="label">{m.productDetail.purchase.stock}</span>
-      <strong>{stock || "0 u."}</strong>
+      <strong>{stock || "0 kg"}</strong>
     </div>
   </div>
 
   <div class="meta-row">
     <div>
-      <span class="label">{m.productDetail.purchase.varietal}</span>
-      <strong>Geisha</strong>
+      <span class="label">Estado</span>
+      <strong>{estadoLabel || "—"}</strong>
     </div>
+    {eudrApproved && (
+      <div>
+        <span class="label">EUDR</span>
+        <strong class="eudr-badge">✓ Aprobado</strong>
+      </div>
+    )}
   </div>
 
-  <a href="/checkout" class="btn-buy">
+  <a href={checkoutUrl} class="btn-buy">
     {m.productDetail.purchase.buy}
   </a>
   
@@ -50,7 +89,7 @@ const { price, stock } = Astro.props;
     <div class="avatar">👨‍🌾</div>
     <div>
       <span class="label">{m.productDetail.producerInfo.producer}</span>
-      <strong>Carlos Eduardo Mendez</strong>
+      <strong>Productor Verificado</strong>
     </div>
   </div>
 </div>
@@ -81,12 +120,26 @@ const { price, stock } = Astro.props;
     font-weight: 800;
     color: #111827;
   }
+  .primas-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 3px 8px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
   .meta-row {
     display: flex;
     justify-content: space-between;
     padding: 12px 0;
     border-bottom: 1px solid #f3f4f6;
     font-size: 0.95rem;
+  }
+  .eudr-badge {
+    color: #137333 !important;
   }
   .btn-buy {
     display: block;

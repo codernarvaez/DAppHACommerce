@@ -40,6 +40,7 @@ const cookieRows = SITE_COOKIES.map((cookie) => ({
 
 	<div class="cookie-modal hidden" role="dialog" aria-labelledby="cookie-modal-title" aria-modal="true">
 		<div class="cookie-modal-panel">
+			<button type="button" class="cookie-modal-close" data-action="close-modal" aria-label="Cerrar">✕</button>
 			<h2 id="cookie-modal-title">{labels.modalTitle}</h2>
 			<p class="modal-lede">{labels.modalBody}</p>
 
@@ -184,10 +185,10 @@ const cookieRows = SITE_COOKIES.map((cookie) => ({
 	}
 
 	root?.addEventListener('click', (event) => {
-		const target = event.target;
-		if (!(target instanceof HTMLElement)) return;
+		if (!(event.target instanceof HTMLElement)) return;
+		const target = event.target.closest('[data-action]');
+		if (!target) return;
 		const action = target.dataset.action;
-		if (!action) return;
 
 		if (action === 'accept-all') {
 			saveConsent({ functional: true, analytics: true, marketing: true });
@@ -325,12 +326,34 @@ const cookieRows = SITE_COOKIES.map((cookie) => ({
 	}
 
 	.cookie-modal-panel {
+		position: relative;
 		width: min(720px, 100%);
 		max-height: min(88vh, 900px);
 		overflow: auto;
 		background: #fff;
 		border-radius: 18px;
 		padding: 22px;
+	}
+
+	.cookie-modal-close {
+		position: absolute;
+		top: 14px;
+		right: 14px;
+		border: 0;
+		background: #111;
+		color: #fff;
+		width: 30px;
+		height: 30px;
+		border-radius: 999px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		display: grid;
+		place-items: center;
+		transition: opacity 0.2s;
+	}
+
+	.cookie-modal-close:hover {
+		opacity: 0.8;
 	}
 
 	.cookie-modal-panel h2 {

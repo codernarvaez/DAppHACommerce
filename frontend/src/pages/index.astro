@@ -33,98 +33,76 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m, pm } = getI18n(locale);
 const catalog = await getCatalogData(locale);
 
-// Simulación de Backend (borrar despues hasta linea 122)===
-const mockBackendResponse = [
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Tostado Origen Loja - Altura",
-		descripcion: "Café de especialidad con notas a chocolate y acidez cítrica.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-loja-1.jpg"],
-		precio_base: 15.50,
-		stock_disponible: 45,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Molido Comercial",
-		descripcion: "Café estándar para el consumo diario y compartir en familia.",
-		categoria: "Molido",
-		imagenes: ["/imagenes/cafe-molido.jpg"],
-		precio_base: 5.75,
-		stock_disponible: 120,
-		estado: "borrador",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Especialidad Geisha - Proceso Natural",
-		descripcion: "Perfil exótico con notas a jazmín, fresa y un final afrutado muy marcado. Tueste ligero.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-geisha-1.jpg"],
-		precio_base: 28.00,
-		stock_disponible: 15,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Lavado Vilcabamba - Tueste Medio",
-		descripcion: "Cuerpo balanceado con un dulzor intenso a panela y acidez brillante a manzana verde.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-vilca.jpg", "/imagenes/cafe-vilca-2.jpg"],
-		precio_base: 12.50,
-		stock_disponible: 85,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	/*{
-		id: crypto.randomUUID(),
-		nombre: "Lote Café Verde - Altura Puyango",
-		descripcion: "Grano crudo seleccionado (humedad 11%), listo para tostadurías. Puntaje en taza: 86 pts.",
-		categoria: "Grano Verde",
-		imagenes: ["/imagenes/verde-puyango.jpg"],
-		precio_base: 8.25,
-		stock_disponible: 250,
-		estado: "borrador",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Cáscara de Café (Para Infusión)",
-		descripcion: "Pulpa de café deshidratada bajo sombra. Produce una bebida dulce y refrescante rica en antioxidantes.",
-		categoria: "Subproducto",
-		imagenes: ["/imagenes/cascara-cafe.jpg"],
-		precio_base: 4.50,
-		stock_disponible: 40,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	}*/
-];
+// Fetch real data from GeoGuard Acopio API ===
+import { fetchBodega, fetchCompras } from '../lib/api/geoguard';
+import type { MarketItem } from '../lib/types';
 
-// Se adapta el formato al de MarketItem que se espera en el componente
-const simulatedItems = mockBackendResponse.map((prod) => ({
-	id: prod.id,
-	title: prod.nombre,
-	description: prod.descripcion || '',
-	price: `$${Number(prod.precio_base).toFixed(2)}`,
-	priceLabel: m.market?.priceLabel || "Precio",
-	stock: prod.stock_disponible,
-	origin: "Loja, Ecuador", 
-	label: prod.categoria,
-	// Asignamos una de las clases de gradiente que tienes en tu CSS de MarketGrid
-	accent: prod.categoria === "Grano Tostado" ? "from-ruby-500" : "from-slate-700",
-	subastaId: null,
+const ACCENTS = ['from-ruby-500', 'from-slate-700', 'from-amber-900', 'from-emerald-950'] as const;
+
+const ESTADO_LABELS: Record<string, string> = {
+	'RECEPCION': 'Recepción',
+	'EN_TRILLA': 'En Trilla',
+	'EN_SECADO': 'En Secado',
+	'EN_BODEGA': 'En Bodega',
+	'TOSTADO': 'Tostado',
+	'MOLIDO': 'Molido',
+	'DESPACHADO': 'Despachado',
+};
+
+try {
+	const geoguardToken = Astro.cookies.get('geoguard_token')?.value;
+	const [bodegaItems, compraItems] = await Promise.all([
+		fetchBodega(geoguardToken),
+		fetchCompras(geoguardToken)
+	]);
+
+	const compraById = new Map(compraItems.map((c) => [c.id, c]));
+
+	const acopioItems: MarketItem[] = bodegaItems.map((bodega, index) => {
+		const compra = compraById.get(bodega.ordenCompraId);
+		const estadoLabel = ESTADO_LABELS[bodega.estado] || bodega.estado;
+		const precio = compra?.precioAcordado ?? 0;
+
+		return {
+			id: bodega.id,
+			title: `Café ${estadoLabel} — Lote ${bodega.id.slice(0, 6).toUpperCase()}`,
+			description: `Peso ingreso: ${bodega.pesoIngresoKg} kg · Estado: ${estadoLabel}${compra ? ` · Volumen compra: ${compra.volumenKg} kg` : ''}`,
+			price: `$${Number(precio).toFixed(2)}`,
+			priceLabel: m.market?.priceLabel || 'Precio',
+			stock: bodega.pesoIngresoKg,
+			origin: 'Loja, Ecuador',
+			label: estadoLabel,
+			accent: ACCENTS[index % ACCENTS.length],
+			subastaId: undefined,
+			bodegaId: bodega.id,
+			estado: 'publicado',
+			estadoKey: bodega.estado,
+		};
+	});
+
+	catalog.items = acopioItems;
+	catalog.error = undefined;
+	catalog.apiOnline = true;
+	// Actualizar contadores con los datos reales
+	catalog.stats.productCount = acopioItems.length;
+} catch (err) {
+	console.error('Error fetching GeoGuard acopio data:', err);
+	catalog.items = [];
+	const errMsg = err instanceof Error ? err.message : '';
+	catalog.error = (errMsg.includes('No autorizado') || errMsg.includes('Acceso denegado'))
+		? 'Debes iniciar sesión para acceder al catálogo de productos.'
+		: (errMsg || 'Error al cargar datos de acopio');
+	catalog.apiOnline = true;
+	catalog.stats.productCount = 0;
+}
+
+// Collect unique estados for filter chips
+const estadoKeys = [...new Set(catalog.items.filter(i => i.estadoKey).map(i => i.estadoKey))];
+const estadoFilters = estadoKeys.map(key => ({
+	key,
+	label: ESTADO_LABELS[key] || key,
 }));
-
-// Se sobreescribe para forzar la simulación
-catalog.items = simulatedItems;
-catalog.error = undefined;
-catalog.apiOnline = true;
-
-
-const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];
+const labelAll = m.filters.typeAll.replace(/^[^:]*:\s*/, '');
 ---
 
 <Layout
@@ -155,16 +133,17 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			</div>
 		</section>
 
+		{estadoKeys.length > 0 && (
 		<section class="filters" aria-label={m.filters.aria}>
-			<button class="filters-toggle" type="button">{m.filters.toggle}</button>
-			<div class="chips">
-				{filters.map((filter) => <span class="chip">{filter}</span>)}
-			</div>
-			<div class="view-icons" aria-hidden="true">
-				<span>▦</span>
-				<span>☰</span>
+			<span class="filters-label">{m.filters.toggle}</span>
+			<div class="chips" id="estado-chips">
+				<button class="chip chip-active" data-estado="">{labelAll}</button>
+				{estadoFilters.map(ef => (
+					<button class="chip" data-estado={ef.key}>{ef.label}</button>
+				))}
 			</div>
 		</section>
+		)}
 
 		<MarketGrid
 			items={catalog.items}
@@ -203,6 +182,25 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 	</main>
 
 	<script>
+		// ── Filtro por estado del producto ──
+		const estadoChips = document.querySelectorAll('#estado-chips .chip');
+		const productCards = document.querySelectorAll('#market .card');
+
+		estadoChips.forEach(chip => {
+			chip.addEventListener('click', () => {
+				const estado = chip.dataset.estado;
+
+				// Resaltar chip activo
+				estadoChips.forEach(c => c.classList.remove('chip-active'));
+				chip.classList.add('chip-active');
+
+				// Mostrar/ocultar tarjetas
+				productCards.forEach(card => {
+					card.style.display = (!estado || card.dataset.estado === estado) ? '' : 'none';
+				});
+			});
+		});
+
 		document.getElementById('footer-cookie-settings')?.addEventListener('click', () => {
 			document.dispatchEvent(new CustomEvent('origin:open-cookie-settings'));
 		});
@@ -259,8 +257,7 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 		}
 
 		.menu,
-		.icon-badge,
-		.filters-toggle {
+		.icon-badge {
 			display: grid;
 			place-items: center;
 		}
@@ -494,15 +491,15 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 
 		.filters {
 			align-items: center;
-			justify-content: space-between;
 			gap: 16px;
 			padding: 18px 18px;
 			margin-top: 18px;
 			background: rgba(255, 255, 255, 0.64);
 			border: 1px solid rgba(18, 18, 18, 0.06);
+			flex-wrap: wrap;
 		}
 
-		.filters-toggle,
+		.filters-label,
 		.chip {
 			border-radius: 10px;
 			font-weight: 700;
@@ -511,11 +508,11 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			text-transform: uppercase;
 		}
 
-		.filters-toggle {
-			border: 0;
-			background: #111;
-			color: white;
-			padding: 12px 14px;
+		.filters-label {
+			color: rgba(18, 18, 18, 0.4);
+			padding: 6px 4px;
+			white-space: nowrap;
+			user-select: none;
 		}
 
 		.chips {
@@ -527,13 +524,18 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			padding: 10px 14px;
 			background: rgba(18, 18, 18, 0.06);
 			color: rgba(18, 18, 18, 0.72);
+			border: 0;
+			cursor: pointer;
+			transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 		}
-
-		.view-icons {
-			display: flex;
-			gap: 14px;
-			color: rgba(18, 18, 18, 0.7);
-			font-size: 1rem;
+		.chip:hover {
+			background: rgba(18, 18, 18, 0.12);
+		}
+		.chip-active,
+		.chip-active:hover {
+			background: #111;
+			color: #fff;
+			box-shadow: 0 2px 8px rgba(18, 18, 18, 0.2);
 		}
 
 		.footer {
@@ -625,10 +627,6 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			.filters {
 				align-items: flex-start;
 				flex-direction: column;
-			}
-
-			.view-icons {
-				align-self: flex-end;
 			}
 
 			.footer {

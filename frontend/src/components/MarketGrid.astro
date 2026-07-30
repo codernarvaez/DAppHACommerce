@@ -31,9 +31,9 @@ const { items, error, apiOnline, m } = Astro.props;
 	)}
 
 	{items.map((product) => (
-		<article class="card" id={`product-${product.id}`}>
+		<article class="card" id={`product-${product.id}`} data-estado={product.estadoKey || ''}>
 			<div class={`card-art ${product.accent}`}>
-				<span class="card-label">{product.label}</span>
+				<span class={`card-label ${product.estadoKey ? `estado-${product.estadoKey}` : ''}`}>{product.label}</span>
 				<div class="art-shadow"></div>
 			</div>
 			<div class="card-body">
@@ -42,7 +42,11 @@ const { items, error, apiOnline, m } = Astro.props;
 					<span class="stock">{interpolate(m.market.stock, { count: product.stock })}</span>
 				</div>
 				<h2>{product.title}</h2>
-				<p class="description">{product.description}</p>
+				<div class="description">
+					{product.description.split('·').map((part) => (
+						<span class="detail-line">{part.trim()}</span>
+					))}
+				</div>
 				<div class="price-row">
 					<div>
 						<span class="price-label">{product.priceLabel}</span>
@@ -50,12 +54,10 @@ const { items, error, apiOnline, m } = Astro.props;
 					</div>
 					<a
 						class="mini-button"
-						{/* href={product.subastaId ? `#auction-${product.subastaId}` : `#product-${product.id}`} */}
-						href="/product-detail"
-						{/* href={`/product-detail?title=${encodeURIComponent(product.title)}&description=${encodeURIComponent(product.description)}&price=${encodeURIComponent(product.price)}&stock=${encodeURIComponent(product.stock)}`} */}
+						href={`/product-detail?bodegaId=${product.bodegaId || product.id}`}
 						aria-label={interpolate(m.market.viewProduct, { title: product.title })}
 					>
-						↗
+						<span class="material-symbols-outlined">shopping_cart</span>
 					</a>
 				</div>
 			</div>
@@ -174,9 +176,16 @@ const { items, error, apiOnline, m } = Astro.props;
 	}
 
 	.description {
-		color: rgba(18, 18, 18, 0.64);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 		margin: 0 0 18px;
-		line-height: 1.6;
+	}
+
+	.detail-line {
+		color: rgba(18, 18, 18, 0.64);
+		font-size: 0.78rem;
+		line-height: 1.4;
 	}
 
 	.price-label {
@@ -203,6 +212,10 @@ const { items, error, apiOnline, m } = Astro.props;
 		color: white;
 		font-size: 1rem;
 		text-decoration: none;
+	}
+
+	.mini-button .material-symbols-outlined {
+		font-size: 1.35rem;
 	}
 
 	.card-art.from-ruby-500 {
@@ -236,4 +249,13 @@ const { items, error, apiOnline, m } = Astro.props;
 			height: 190px;
 		}
 	}
+
+	/* ── Colores por estado ── */
+	.card-label.estado-RECEPCION  { background: #475569; }
+	.card-label.estado-EN_SECADO  { background: #d97706; }
+	.card-label.estado-EN_TRILLA  { background: #ea580c; }
+	.card-label.estado-EN_BODEGA  { background: #16a34a; }
+	.card-label.estado-TOSTADO    { background: #92400e; }
+	.card-label.estado-MOLIDO     { background: #9333ea; }
+	.card-label.estado-DESPACHADO { background: #0d9488; }
 </style>

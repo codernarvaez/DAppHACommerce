@@ -1,5 +1,29 @@
+:root {
+    --color-on-surface: #121212;
+    --color-on-surface-variant: #666;
+    --color-outline: #999;
+    /* icons */
+    --color-surface-soft: rgba(18, 18, 18, 0.06);
+    --color-secundary: #0d6f66;
+    --color-white: #ffffff;
+
+}
+
+:global(html) {
+    scroll-behavior: smooth;
+    background: #f4f1eb;
+}
+
+:global(body) {
+    font-family: 'Manrope', sans-serif;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(244, 241, 235, 0.96) 40%),
+        linear-gradient(180deg, #f7f3ee 0%, #f1eee8 100%);
+    color: var(--color-on-surface);
+}
+
 .payment-header {
-    font-family: var(--font-sans);
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 /* Forms Container */
@@ -30,7 +54,7 @@
     flex-direction: row;
     gap: 20px;
     width: 100%;
-}  
+}
 
 .payment-card {
     font-family: 'Space Grotesk', sans-serif;
@@ -59,13 +83,15 @@
 
 .payment-card.selected {
     border-color: var(--color-on-surface);
-    background:  rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.72);
 }
+
 .icon {
     display: flex;
     width: 30px;
     height: 30px;
 }
+
 /* Form Inputs */
 .form-grid {
     display: grid;
@@ -298,8 +324,8 @@
 
 .payment-confirm-btn {
     padding: 12px 32px;
-    background: var(--bg-button-primary-hover);
-    color: var(--color-secundary);
+    background: var(--color-on-surface);
+    color: var(--color-white);
     border: none;
     border-radius: 8px;
     font-size: 12px;
@@ -334,6 +360,7 @@
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -345,6 +372,7 @@
     .payment-grid {
         flex-direction: column;
     }
+
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -360,5 +388,110 @@
     .payment-security {
         width: 100%;
         justify-content: center;
+    }
+}
+
+/* Modal Estilo Premium */
+.status-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(18, 18, 18, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.status-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.status-modal-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 24px 64px rgba(18, 18, 18, 0.15);
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.status-modal-overlay.active .status-modal-card {
+    transform: scale(1);
+}
+
+.status-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.status-icon-wrapper.success {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+.status-icon-wrapper.error {
+    background: #fce8e6;
+    color: #c5221f;
+}
+
+.status-modal-card h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    color: var(--color-on-surface);
+}
+
+.status-modal-card p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-on-surface-variant);
+    margin: 0 0 28px;
+}
+
+.status-modal-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--color-on-surface);
+    color: var(--color-white);
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-modal-btn:hover {
+    background: #333333;
+    transform: translateY(-1px);
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
     }
 }
