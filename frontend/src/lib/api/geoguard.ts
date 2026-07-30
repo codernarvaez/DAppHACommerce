@@ -77,3 +77,20 @@ export function fetchCompras(token?: string): Promise<CompraItem[]> {
 export function fetchCompraPorMuestra(muestraId: string, token?: string): Promise<CompraItem> {
 	return geoFetch<CompraItem>(`/acopio/compras/muestra/${muestraId}`, token);
 }
+
+export interface CatalogoItem {
+	id: string;
+	codigoLote: string;
+	pesoDisponibleKg: number;
+	pesoTotalKg: number;
+	tipoCafe: string;
+	precioReferencial: number;
+	puntajeSca: number | null;
+	proceso: string;
+	esEspecialidad: boolean;
+}
+
+export function fetchPublicCatalogo(): Promise<CatalogoItem[]> {
+	return geoFetch<CatalogoItem[]>('/public/catalogo/');
+}
+
