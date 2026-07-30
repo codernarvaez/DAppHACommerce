@@ -27,7 +27,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     </div>
   </div>
 
-  <div class="table-status" id="producto-status">Cargando productos desde la base de datos...</div>
+  <div class="table-status" id="producto-status">Cargando productos ...</div>
 
   <div class="table-container">
     <table class="data-table">
@@ -48,6 +48,85 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Modal de formulario: Crear / Editar Producto -->
+  <div class="modal-overlay" id="producto-form-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="producto-form-title">
+      <div class="modal-header">
+        <h2 id="producto-form-title">Nuevo Producto</h2>
+        <button type="button" class="modal-close" id="producto-form-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="producto-form" class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="f-lote_id">ID del lote</label>
+            <input type="text" id="f-lote_id" name="lote_id" required />
+          </div>
+          <div class="form-group">
+            <label for="f-nombre">Nombre del producto</label>
+            <input type="text" id="f-nombre" name="nombre" required />
+          </div>
+          <div class="form-group form-group-full">
+            <label for="f-descripcion">Descripción</label>
+            <textarea id="f-descripcion" name="descripcion" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="f-categoria">Categoría</label>
+            <input type="text" id="f-categoria" name="categoria" required />
+          </div>
+          <div class="form-group">
+            <label for="f-precio_base">Precio base</label>
+            <input type="number" id="f-precio_base" name="precio_base" step="0.01" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="f-stock_disponible">Stock disponible</label>
+            <input type="number" id="f-stock_disponible" name="stock_disponible" step="1" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="f-estado">Estado</label>
+            <select id="f-estado" name="estado" required>
+              <option value="borrador">Borrador</option>
+              <option value="publicado">Publicado</option>
+              <option value="agotado">Agotado</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-tx_hash">Hash de transacción</label>
+            <input type="text" id="f-tx_hash" name="tx_hash" />
+          </div>
+          <div class="form-group form-group-full">
+            <label for="f-imagenes">URLs de imágenes (separadas por coma)</label>
+            <textarea id="f-imagenes" name="imagenes" rows="2"></textarea>
+          </div>
+        </div>
+        <p class="form-error" id="producto-form-error" hidden></p>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="producto-form-cancel">Cancelar</button>
+        <button type="submit" form="producto-form" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal genérico de confirmación -->
+  <div class="modal-overlay" id="confirm-overlay" hidden>
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirmar acción</h2>
+        <button type="button" class="modal-close" id="confirm-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message">¿Estás seguro de realizar esta acción?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="confirm-cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="confirm-accept">Confirmar</button>
+      </div>
+    </div>
   </div>
 </DashboardLayout>
 
@@ -91,6 +170,97 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   .bg-blue { background: #dbeafe; color: #1d4ed8; }
   .bg-red { background: #fee2e2; color: #b91c1c; }
   .bg-gray { background: #e5e7eb; color: #374151; }
+
+  /* --- Modales --- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 17, 17, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1000;
+  }
+  .modal-overlay[hidden] { display: none; }
+
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  .modal-sm { max-width: 420px; }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .modal-header h2 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .modal-close:hover { background: #f3f4f6; color: #111; }
+
+  .modal-body { padding: 24px; overflow-y: auto; }
+  .modal-body p { margin: 0; color: #374151; line-height: 1.5; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group-full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.8rem; font-weight: 700; color: #4b5563; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: #111; }
+  .form-group textarea { resize: vertical; font-family: monospace; }
+
+  .form-error {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+
+  .modal-footer .btn-danger { background: #b91c1c; color: #fff; }
+  .modal-footer .btn-danger:hover { background: #991b1b; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <script>
@@ -189,8 +359,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       element.style.setProperty('display', display, 'important');
     });
 
-    const addButton = document.getElementById('btn-agregar');
-    if (addButton) addButton.style.display = canManage() ? 'inline-flex' : 'none';
+    /*const addButton = document.getElementById('btn-agregar');
+    if (addButton) addButton.style.display = canManage() ? 'inline-flex' : 'none';*/
   }
 
   function renderTable() {
@@ -232,51 +402,173 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     syncPermissionButtons();
   }
 
-  function promptForProducto(existing) {
-    const lote_id = window.prompt('ID del lote', existing?.lote_id ?? '');
-    if (lote_id === null) return null;
+  function parseImagenes(value) {
+    return String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
 
-    const nombre = window.prompt('Nombre del producto', existing?.nombre ?? '');
-    if (!nombre) return null;
+  /* ---------- Modal de confirmación genérico ---------- */
 
-    const descripcion = window.prompt('Descripción', existing?.descripcion ?? '') ?? '';
-    const categoria = window.prompt('Categoría', existing?.categoria ?? '');
-    if (!categoria) return null;
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmAcceptBtn = document.getElementById('confirm-accept');
+  const confirmCancelBtn = document.getElementById('confirm-cancel');
+  const confirmCloseBtn = document.getElementById('confirm-close');
 
-    const imagenes = window.prompt('URLs de imágenes separadas por coma', existing?.imagenes?.join(', ') ?? '') ?? '';
-    const precio_base = window.prompt('Precio base', existing ? String(existing.precio_base) : '');
-    if (!precio_base) return null;
+  let pendingConfirmAction = null;
 
-    const stock_disponible = window.prompt('Stock disponible', existing ? String(existing.stock_disponible) : '');
-    if (!stock_disponible) return null;
+  function openConfirmModal({ title, message, confirmLabel = 'Confirmar', danger = false, onConfirm }) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmAcceptBtn.textContent = confirmLabel;
+    confirmAcceptBtn.classList.toggle('btn-danger', danger);
+    pendingConfirmAction = onConfirm;
+    confirmOverlay.hidden = false;
+  }
 
-    const estado = window.prompt('Estado (borrador, publicado, agotado, inactivo)', existing?.estado ?? 'borrador');
-    if (!estado) return null;
+  function closeConfirmModal() {
+    confirmOverlay.hidden = true;
+    pendingConfirmAction = null;
+  }
 
-    const tx_hash = window.prompt('Hash de transacción', existing?.tx_hash ?? '') ?? '';
+  confirmAcceptBtn?.addEventListener('click', async () => {
+    const action = pendingConfirmAction;
+    closeConfirmModal();
+    if (action) await action();
+  });
+  confirmCancelBtn?.addEventListener('click', closeConfirmModal);
+  confirmCloseBtn?.addEventListener('click', closeConfirmModal);
+  confirmOverlay?.addEventListener('click', (event) => {
+    if (event.target === confirmOverlay) closeConfirmModal();
+  });
+
+  /* ---------- Modal de formulario (crear / editar) ---------- */
+
+  const productoFormOverlay = document.getElementById('producto-form-overlay');
+  const productoForm = document.getElementById('producto-form');
+  const productoFormTitle = document.getElementById('producto-form-title');
+  const productoFormError = document.getElementById('producto-form-error');
+  const productoFormCancelBtn = document.getElementById('producto-form-cancel');
+  const productoFormCloseBtn = document.getElementById('producto-form-close');
+
+  let formMode = 'create'; // 'create' | 'edit'
+  let editingId = null;
+
+  function showFormError(message) {
+    productoFormError.textContent = message;
+    productoFormError.hidden = false;
+  }
+
+  function clearFormError() {
+    productoFormError.hidden = true;
+    productoFormError.textContent = '';
+  }
+
+  function fillForm(existing) {
+    productoForm.elements['lote_id'].value = existing?.lote_id ?? '';
+    productoForm.elements['nombre'].value = existing?.nombre ?? '';
+    productoForm.elements['descripcion'].value = existing?.descripcion ?? '';
+    productoForm.elements['categoria'].value = existing?.categoria ?? '';
+    productoForm.elements['precio_base'].value = existing?.precio_base ?? '';
+    productoForm.elements['stock_disponible'].value = existing?.stock_disponible ?? '';
+    productoForm.elements['estado'].value = existing?.estado ?? 'borrador';
+    productoForm.elements['tx_hash'].value = existing?.tx_hash ?? '';
+    productoForm.elements['imagenes'].value = (existing?.imagenes ?? []).join(', ');
+  }
+
+  function openProductoFormModal(mode, existing) {
+    formMode = mode;
+    editingId = existing?.id ?? null;
+    productoFormTitle.textContent = mode === 'edit' ? `Editar Producto ${existing?.nombre ?? ''}` : 'Nuevo Producto';
+    clearFormError();
+    fillForm(existing);
+    productoFormOverlay.hidden = false;
+  }
+
+  function closeProductoFormModal() {
+    productoFormOverlay.hidden = true;
+    productoForm.reset();
+    clearFormError();
+    editingId = null;
+  }
+
+  productoFormCancelBtn?.addEventListener('click', closeProductoFormModal);
+  productoFormCloseBtn?.addEventListener('click', closeProductoFormModal);
+  productoFormOverlay?.addEventListener('click', (event) => {
+    if (event.target === productoFormOverlay) closeProductoFormModal();
+  });
+
+  function readFormPayload() {
+    const formData = new FormData(productoForm);
+    const raw = Object.fromEntries(formData.entries());
+
+    if (!raw.lote_id || !raw.nombre || !raw.categoria || !raw.precio_base || !raw.stock_disponible || !raw.estado) {
+      throw new Error('Completa todos los campos obligatorios.');
+    }
 
     return {
-      lote_id,
-      nombre,
-      descripcion,
-      categoria,
-      imagenes: imagenes
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-      precio_base: Number(precio_base),
-      stock_disponible: Number(stock_disponible),
-      estado,
-      tx_hash: tx_hash || null,
+      lote_id: raw.lote_id,
+      nombre: raw.nombre,
+      descripcion: raw.descripcion || '',
+      categoria: raw.categoria,
+      imagenes: parseImagenes(raw.imagenes),
+      precio_base: Number(raw.precio_base),
+      stock_disponible: Number(raw.stock_disponible),
+      estado: raw.estado,
+      tx_hash: raw.tx_hash || null,
     };
   }
 
+  productoForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!canManage()) return;
+
+    clearFormError();
+
+    let payload;
+    try {
+      payload = readFormPayload();
+    } catch (error) {
+      showFormError(error instanceof Error ? error.message : 'Datos inválidos.');
+      return;
+    }
+
+    const isEdit = formMode === 'edit';
+    const id = editingId;
+
+    openConfirmModal({
+      title: isEdit ? 'Confirmar edición' : 'Confirmar creación',
+      message: isEdit
+        ? `¿Deseas guardar los cambios del producto ${payload.nombre}?`
+        : `¿Deseas registrar el producto ${payload.nombre}?`,
+      confirmLabel: isEdit ? 'Guardar cambios' : 'Crear producto',
+      onConfirm: async () => {
+        try {
+          if (isEdit && id) {
+            await updateProducto(id, payload);
+          } else {
+            await createProducto(payload);
+          }
+          closeProductoFormModal();
+          await loadProductos();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'No fue posible guardar el producto.';
+          openProductoFormModal(formMode, isEdit ? { ...payload, id } : payload);
+          showFormError(message);
+        }
+      },
+    });
+  });
+
   async function loadProductos() {
-    setStatus('Cargando productos desde la base de datos...');
+    setStatus('Cargando productos ...');
     try {
       productosState.items = await fetchProductos();
       renderTable();
-      setStatus(`Se cargaron ${productosState.items.length} productos desde la base de datos.`);
+      setStatus(`Se cargaron ${productosState.items.length} productos.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No fue posible cargar los productos.';
       setStatus(message);
@@ -284,55 +576,41 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
   }
 
-  async function handleCreate() {
+  function handleCreate() {
     if (!canManage()) return;
-
-    const payload = promptForProducto();
-    if (!payload) return;
-
-    try {
-      await createProducto(payload);
-      await loadProductos();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible crear el producto.';
-      window.alert(message);
-    }
+    openProductoFormModal('create', null);
   }
 
-  async function handleEdit(id) {
+  function handleEdit(id) {
     if (!canManage()) return;
 
     const existing = productosState.items.find((item) => item.id === id);
     if (!existing) return;
 
-    const payload = promptForProducto(existing);
-    if (!payload) return;
-
-    try {
-      await updateProducto(id, payload);
-      await loadProductos();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible editar el producto.';
-      window.alert(message);
-    }
+    openProductoFormModal('edit', existing);
   }
 
-  async function handleDelete(id) {
+  function handleDelete(id) {
     if (!canManage()) return;
 
     const existing = productosState.items.find((item) => item.id === id);
     if (!existing) return;
 
-    const confirmed = window.confirm(`¿Eliminar el producto ${existing.nombre}?`);
-    if (!confirmed) return;
-
-    try {
-      await deleteProducto(id);
-      await loadProductos();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible eliminar el producto.';
-      window.alert(message);
-    }
+    openConfirmModal({
+      title: 'Eliminar producto',
+      message: `¿Estás seguro de eliminar el producto ${existing.nombre}? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await deleteProducto(id);
+          await loadProductos();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'No fue posible eliminar el producto.';
+          window.alert(message);
+        }
+      },
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -371,6 +649,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (action === 'delete') {
         void handleDelete(id);
       }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!confirmOverlay.hidden) closeConfirmModal();
+      else if (!productoFormOverlay.hidden) closeProductoFormModal();
     });
 
     await loadProductos();

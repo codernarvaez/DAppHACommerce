@@ -10,37 +10,46 @@ const consent = readConsent(Astro.cookies);
 const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m } = getI18n(locale);
 
-// Datos simulados para comprobar interfaz
-const steps = [
-  {
-    title: "Cosecha & Selección",
-    date: "OCT 12, 2023",
-    status: "COMPLETADO",
-    desc: "Recolección manual selectiva de cerezas con 22-24° Brix. Limpieza por flotación completada."
-  },
-  {
-    title: "Fermentación anaeróbica",
-    date: "OCT 15, 2023",
-    status: "COMPLETADO",
-    desc: "Fermentación de 48 horas en tanques sellados de acero inoxidable. Monitoreo de la estabilidad del pH."
-  },
-  {
-    title: "Secado al sol",
-    date: "OCT 18, 2023",
-    status: "COMPLETADO",
-    desc: "Secado lento en camas africanas elevadas bajo sombra controlada."
-  }
+interface Props {
+  estado?: string;
+}
+
+const { estado = '' } = Astro.props;
+
+// Build chronology steps dynamically based on the bodega estado
+const ALL_STEPS = [
+  { key: 'RECEPCION',  title: 'Recepción & Pesaje',    desc: 'Ingreso del café pergamino a bodega. Control de peso y humedad.' },
+  { key: 'EN_SECADO',  title: 'Secado',                desc: 'Secado lento en camas africanas o patio para alcanzar humedad óptima (10-12%).' },
+  { key: 'EN_TRILLA',  title: 'Trilla',                desc: 'Proceso mecánico de remoción del pergamino. Clasificación por tamaño y densidad.' },
+  { key: 'EN_BODEGA',  title: 'Almacenamiento',        desc: 'Almacenamiento en bodega con control de temperatura y humedad.' },
+  { key: 'TOSTADO',    title: 'Tostado',               desc: 'Tueste artesanal controlado para desarrollo óptimo de sabor.' },
+  { key: 'MOLIDO',     title: 'Molienda',              desc: 'Molienda calibrada según perfil de preparación deseado.' },
+  { key: 'DESPACHADO', title: 'Despacho',              desc: 'Empaque final y envío al comprador con trazabilidad completa.' },
 ];
+
+// Determine which steps are completed based on the current estado
+const currentIndex = ALL_STEPS.findIndex((s) => s.key === estado);
+
+const steps = ALL_STEPS.map((step, index) => {
+  let status = 'PENDIENTE';
+  if (currentIndex >= 0) {
+    if (index < currentIndex) status = 'COMPLETADO';
+    else if (index === currentIndex) status = 'EN PROCESO';
+  }
+  return { ...step, status };
+});
 ---
 
 <div class="chronology-container">
   <h2>{m.productDetail.chronology}</h2>
   <div class="timeline">
     {steps.map((step) => (
-      <div class="timeline-item">
-        <div class="timeline-badge"></div>
+      <div class:list={['timeline-item', { completed: step.status === 'COMPLETADO', active: step.status === 'EN PROCESO' }]}>
+        <div class:list={['timeline-badge', { completed: step.status === 'COMPLETADO', active: step.status === 'EN PROCESO' }]}></div>
         <div class="timeline-content">
-          <span class="status">{step.status} • {step.date}</span>
+          <span class:list={['status', { 'status-completed': step.status === 'COMPLETADO', 'status-active': step.status === 'EN PROCESO' }]}>
+            {step.status}
+          </span>
           <h3>{step.title}</h3>
           <p>{step.desc}</p>
         </div>
@@ -72,6 +81,11 @@ const steps = [
   .timeline-item {
     position: relative;
     margin-bottom: 24px;
+    opacity: 0.5;
+  }
+  .timeline-item.completed,
+  .timeline-item.active {
+    opacity: 1;
   }
   .timeline-item:last-child {
     margin-bottom: 0;
@@ -83,14 +97,27 @@ const steps = [
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #000;
+    background: #d1d5db;
     border: 2px solid #fff;
+  }
+  .timeline-badge.completed {
+    background: #137333;
+  }
+  .timeline-badge.active {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
   }
   .status {
     font-size: 0.75rem;
     font-weight: bold;
-    color: #6b7280;
+    color: #9ca3af;
     text-transform: uppercase;
+  }
+  .status-completed {
+    color: #137333;
+  }
+  .status-active {
+    color: #f59e0b;
   }
   .timeline-content h3 {
     font-size: 1.1rem;

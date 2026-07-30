@@ -33,95 +33,60 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m, pm } = getI18n(locale);
 const catalog = await getCatalogData(locale);
 
-// Simulación de Backend (borrar despues hasta linea 122)===
-const mockBackendResponse = [
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Tostado Origen Loja - Altura",
-		descripcion: "Café de especialidad con notas a chocolate y acidez cítrica.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-loja-1.jpg"],
-		precio_base: 15.50,
-		stock_disponible: 45,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Molido Comercial",
-		descripcion: "Café estándar para el consumo diario y compartir en familia.",
-		categoria: "Molido",
-		imagenes: ["/imagenes/cafe-molido.jpg"],
-		precio_base: 5.75,
-		stock_disponible: 120,
-		estado: "borrador",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Especialidad Geisha - Proceso Natural",
-		descripcion: "Perfil exótico con notas a jazmín, fresa y un final afrutado muy marcado. Tueste ligero.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-geisha-1.jpg"],
-		precio_base: 28.00,
-		stock_disponible: 15,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Café Lavado Vilcabamba - Tueste Medio",
-		descripcion: "Cuerpo balanceado con un dulzor intenso a panela y acidez brillante a manzana verde.",
-		categoria: "Grano Tostado",
-		imagenes: ["/imagenes/cafe-vilca.jpg", "/imagenes/cafe-vilca-2.jpg"],
-		precio_base: 12.50,
-		stock_disponible: 85,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	},
-	/*{
-		id: crypto.randomUUID(),
-		nombre: "Lote Café Verde - Altura Puyango",
-		descripcion: "Grano crudo seleccionado (humedad 11%), listo para tostadurías. Puntaje en taza: 86 pts.",
-		categoria: "Grano Verde",
-		imagenes: ["/imagenes/verde-puyango.jpg"],
-		precio_base: 8.25,
-		stock_disponible: 250,
-		estado: "borrador",
-		created_at: new Date().toISOString()
-	},
-	{
-		id: crypto.randomUUID(),
-		nombre: "Cáscara de Café (Para Infusión)",
-		descripcion: "Pulpa de café deshidratada bajo sombra. Produce una bebida dulce y refrescante rica en antioxidantes.",
-		categoria: "Subproducto",
-		imagenes: ["/imagenes/cascara-cafe.jpg"],
-		precio_base: 4.50,
-		stock_disponible: 40,
-		estado: "publicado",
-		created_at: new Date().toISOString()
-	}*/
-];
+// Fetch real data from GeoGuard Acopio API ===
+import { fetchBodega, fetchCompras } from '../lib/api/geoguard';
+import type { MarketItem } from '../lib/types';
 
-// Se adapta el formato al de MarketItem que se espera en el componente
-const simulatedItems = mockBackendResponse.map((prod) => ({
-	id: prod.id,
-	title: prod.nombre,
-	description: prod.descripcion || '',
-	price: `$${Number(prod.precio_base).toFixed(2)}`,
-	priceLabel: m.market?.priceLabel || "Precio",
-	stock: prod.stock_disponible,
-	origin: "Loja, Ecuador", 
-	label: prod.categoria,
-	// Asignamos una de las clases de gradiente que tienes en tu CSS de MarketGrid
-	accent: prod.categoria === "Grano Tostado" ? "from-ruby-500" : "from-slate-700",
-	subastaId: null,
-}));
+const ACCENTS = ['from-ruby-500', 'from-slate-700', 'from-amber-900', 'from-emerald-950'] as const;
 
-// Se sobreescribe para forzar la simulación
-catalog.items = simulatedItems;
-catalog.error = undefined;
-catalog.apiOnline = true;
+const ESTADO_LABELS: Record<string, string> = {
+	'EN_TRILLA': 'En Trilla',
+	'EN_SECADO': 'En Secado',
+	'EN_BODEGA': 'En Bodega',
+	'TOSTADO': 'Tostado',
+	'MOLIDO': 'Molido',
+	'DESPACHADO': 'Despachado',
+};
+
+try {
+	const geoguardToken = Astro.cookies.get('geoguard_token')?.value;
+	const [bodegaItems, compraItems] = await Promise.all([
+		fetchBodega(geoguardToken),
+		fetchCompras(geoguardToken)
+	]);
+
+	const compraById = new Map(compraItems.map((c) => [c.id, c]));
+
+	const acopioItems: MarketItem[] = bodegaItems.map((bodega, index) => {
+		const compra = compraById.get(bodega.ordenCompraId);
+		const estadoLabel = ESTADO_LABELS[bodega.estado] || bodega.estado;
+		const precio = compra?.precioAcordado ?? 0;
+
+		return {
+			id: bodega.id,
+			title: `Café ${estadoLabel} — Lote ${bodega.id.slice(0, 6).toUpperCase()}`,
+			description: `Peso ingreso: ${bodega.pesoIngresoKg} kg · Estado: ${estadoLabel}${compra ? ` · Volumen compra: ${compra.volumenKg} kg` : ''}`,
+			price: `$${Number(precio).toFixed(2)}`,
+			priceLabel: m.market?.priceLabel || 'Precio',
+			stock: bodega.pesoIngresoKg,
+			origin: 'Loja, Ecuador',
+			label: estadoLabel,
+			accent: ACCENTS[index % ACCENTS.length],
+			subastaId: undefined,
+			bodegaId: bodega.id,
+			estado: 'publicado',
+		};
+	});
+
+	catalog.items = acopioItems;
+	catalog.error = undefined;
+	catalog.apiOnline = true;
+} catch (err) {
+	console.error('Error fetching GeoGuard acopio data:', err);
+	catalog.items = [];
+	catalog.error = err instanceof Error ? err.message : 'Error al cargar datos de acopio';
+	catalog.apiOnline = true;
+}
 
 
 const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];

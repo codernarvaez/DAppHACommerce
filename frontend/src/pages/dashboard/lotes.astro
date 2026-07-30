@@ -49,6 +49,92 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       </tbody>
     </table>
   </div>
+
+  <!-- Modal de formulario: Crear / Editar Lote -->
+  <div class="modal-overlay" id="lote-form-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lote-form-title">
+      <div class="modal-header">
+        <h2 id="lote-form-title">Nuevo Lote</h2>
+        <button type="button" class="modal-close" id="lote-form-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="lote-form" class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="f-productor_id">ID del productor</label>
+            <input type="text" id="f-productor_id" name="productor_id" required />
+          </div>
+          <div class="form-group">
+            <label for="f-codigo_lote">Código del lote</label>
+            <input type="text" id="f-codigo_lote" name="codigo_lote" required />
+          </div>
+          <div class="form-group">
+            <label for="f-variedad">Variedad</label>
+            <input type="text" id="f-variedad" name="variedad" required />
+          </div>
+          <div class="form-group">
+            <label for="f-fecha_cosecha">Fecha de cosecha</label>
+            <input type="date" id="f-fecha_cosecha" name="fecha_cosecha" required />
+          </div>
+          <div class="form-group">
+            <label for="f-peso_kg">Peso (Kg)</label>
+            <input type="number" id="f-peso_kg" name="peso_kg" step="0.01" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="f-proceso">Proceso</label>
+            <input type="text" id="f-proceso" name="proceso" required />
+          </div>
+          <div class="form-group">
+            <label for="f-origen_geo">Origen geográfico</label>
+            <input type="text" id="f-origen_geo" name="origen_geo" required />
+          </div>
+          <div class="form-group">
+            <label for="f-estado">Estado</label>
+            <select id="f-estado" name="estado" required>
+              <option value="registrado">Registrado</option>
+              <option value="verificado">Verificado</option>
+              <option value="publicado">Publicado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-id_trazabilidad_externa">ID trazabilidad externa</label>
+            <input type="text" id="f-id_trazabilidad_externa" name="id_trazabilidad_externa" />
+          </div>
+          <div class="form-group">
+            <label for="f-tx_hash">Hash de transacción</label>
+            <input type="text" id="f-tx_hash" name="tx_hash" />
+          </div>
+          <div class="form-group form-group-full">
+            <label for="f-datos_trazabilidad">Datos de trazabilidad (JSON)</label>
+            <textarea id="f-datos_trazabilidad" name="datos_trazabilidad" rows="4">{}</textarea>
+          </div>
+        </div>
+        <p class="form-error" id="lote-form-error" hidden></p>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="lote-form-cancel">Cancelar</button>
+        <button type="submit" form="lote-form" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal genérico de confirmación -->
+  <div class="modal-overlay" id="confirm-overlay" hidden>
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirmar acción</h2>
+        <button type="button" class="modal-close" id="confirm-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message">¿Estás seguro de realizar esta acción?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="confirm-cancel">Cancelar</button>
+        <button type="button" class="btn-primary" id="confirm-accept">Confirmar</button>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <style>
@@ -90,6 +176,97 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   /* Por defecto ocultamos los botones de permisos estrictos */
   .require-admin-prod { display: none !important; }
   .table-empty { color: #6b7280; text-align: center; }
+
+  /* --- Modales --- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 17, 17, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1000;
+  }
+  .modal-overlay[hidden] { display: none; }
+
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  .modal-sm { max-width: 420px; }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .modal-header h2 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .modal-close:hover { background: #f3f4f6; color: #111; }
+
+  .modal-body { padding: 24px; overflow-y: auto; }
+  .modal-body p { margin: 0; color: #374151; line-height: 1.5; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group-full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.8rem; font-weight: 700; color: #4b5563; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: #111; }
+  .form-group textarea { resize: vertical; font-family: monospace; }
+
+  .form-error {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+
+  .modal-footer .btn-danger { background: #b91c1c; color: #fff; }
+  .modal-footer .btn-danger:hover { background: #991b1b; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <script>
@@ -228,10 +405,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       element.style.setProperty('display', display, 'important');
     });
 
-    const addButton = document.getElementById('btn-agregar');
+    /*const addButton = document.getElementById('btn-agregar');
     if (addButton) {
       addButton.style.display = canManage() ? 'inline-flex' : 'none';
-    }
+    }*/
   }
 
   function parseOptionalJson(value) {
@@ -239,59 +416,170 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     return JSON.parse(value);
   }
 
-  function promptForLote(existing) {
-    const productor_id = window.prompt('ID del productor', existing?.productor_id ?? '');
-    if (productor_id === null) return null;
+  /* ---------- Modal de confirmación genérico ---------- */
 
-    const codigo_lote = window.prompt('Código del lote', existing?.codigo_lote ?? '');
-    if (!codigo_lote) return null;
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmAcceptBtn = document.getElementById('confirm-accept');
+  const confirmCancelBtn = document.getElementById('confirm-cancel');
+  const confirmCloseBtn = document.getElementById('confirm-close');
 
-    const variedad = window.prompt('Variedad', existing?.variedad ?? '');
-    if (!variedad) return null;
+  let pendingConfirmAction = null;
 
-    const fecha_cosecha = window.prompt('Fecha de cosecha (YYYY-MM-DD)', existing?.fecha_cosecha?.slice(0, 10) ?? '');
-    if (!fecha_cosecha) return null;
+  function openConfirmModal({ title, message, confirmLabel = 'Confirmar', danger = false, onConfirm }) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmAcceptBtn.textContent = confirmLabel;
+    confirmAcceptBtn.classList.toggle('btn-danger', danger);
+    pendingConfirmAction = onConfirm;
+    confirmOverlay.hidden = false;
+  }
 
-    const peso_kg = window.prompt('Peso en kg', existing ? String(existing.peso_kg) : '');
-    if (!peso_kg) return null;
+  function closeConfirmModal() {
+    confirmOverlay.hidden = true;
+    pendingConfirmAction = null;
+  }
 
-    const proceso = window.prompt('Proceso', existing?.proceso ?? '');
-    if (!proceso) return null;
+  confirmAcceptBtn?.addEventListener('click', async () => {
+    const action = pendingConfirmAction;
+    closeConfirmModal();
+    if (action) await action();
+  });
+  confirmCancelBtn?.addEventListener('click', closeConfirmModal);
+  confirmCloseBtn?.addEventListener('click', closeConfirmModal);
+  confirmOverlay?.addEventListener('click', (event) => {
+    if (event.target === confirmOverlay) closeConfirmModal();
+  });
 
-    const origen_geo = window.prompt('Origen geográfico', existing?.origen_geo ?? '');
-    if (!origen_geo) return null;
+  /* ---------- Modal de formulario (crear / editar) ---------- */
 
-    const estado = window.prompt('Estado (registrado, verificado, publicado)', existing?.estado ?? 'registrado');
-    if (!estado) return null;
+  const loteFormOverlay = document.getElementById('lote-form-overlay');
+  const loteForm = document.getElementById('lote-form');
+  const loteFormTitle = document.getElementById('lote-form-title');
+  const loteFormError = document.getElementById('lote-form-error');
+  const loteFormCancelBtn = document.getElementById('lote-form-cancel');
+  const loteFormCloseBtn = document.getElementById('lote-form-close');
 
-    const id_trazabilidad_externa = window.prompt('ID trazabilidad externa', existing?.id_trazabilidad_externa ?? '') ?? '';
-    const datos_trazabilidad = window.prompt('Datos de trazabilidad en JSON', JSON.stringify(existing?.datos_trazabilidad ?? {}, null, 2));
-    if (datos_trazabilidad === null) return null;
+  let formMode = 'create'; // 'create' | 'edit'
+  let editingId = null;
 
-    const tx_hash = window.prompt('Hash de transacción', existing?.tx_hash ?? '') ?? '';
+  function showFormError(message) {
+    loteFormError.textContent = message;
+    loteFormError.hidden = false;
+  }
+
+  function clearFormError() {
+    loteFormError.hidden = true;
+    loteFormError.textContent = '';
+  }
+
+  function fillForm(existing) {
+    loteForm.elements['productor_id'].value = existing?.productor_id ?? '';
+    loteForm.elements['codigo_lote'].value = existing?.codigo_lote ?? '';
+    loteForm.elements['variedad'].value = existing?.variedad ?? '';
+    loteForm.elements['fecha_cosecha'].value = existing?.fecha_cosecha ? String(existing.fecha_cosecha).slice(0, 10) : '';
+    loteForm.elements['peso_kg'].value = existing?.peso_kg ?? '';
+    loteForm.elements['proceso'].value = existing?.proceso ?? '';
+    loteForm.elements['origen_geo'].value = existing?.origen_geo ?? '';
+    loteForm.elements['estado'].value = existing?.estado ?? 'registrado';
+    loteForm.elements['id_trazabilidad_externa'].value = existing?.id_trazabilidad_externa ?? '';
+    loteForm.elements['tx_hash'].value = existing?.tx_hash ?? '';
+    loteForm.elements['datos_trazabilidad'].value = JSON.stringify(existing?.datos_trazabilidad ?? {}, null, 2);
+  }
+
+  function openLoteFormModal(mode, existing) {
+    formMode = mode;
+    editingId = existing?.id ?? null;
+    loteFormTitle.textContent = mode === 'edit' ? `Editar Lote ${existing?.codigo_lote ?? ''}` : 'Nuevo Lote';
+    clearFormError();
+    fillForm(existing);
+    loteFormOverlay.hidden = false;
+  }
+
+  function closeLoteFormModal() {
+    loteFormOverlay.hidden = true;
+    loteForm.reset();
+    clearFormError();
+    editingId = null;
+  }
+
+  loteFormCancelBtn?.addEventListener('click', closeLoteFormModal);
+  loteFormCloseBtn?.addEventListener('click', closeLoteFormModal);
+  loteFormOverlay?.addEventListener('click', (event) => {
+    if (event.target === loteFormOverlay) closeLoteFormModal();
+  });
+
+  function readFormPayload() {
+    const formData = new FormData(loteForm);
+    const raw = Object.fromEntries(formData.entries());
+
+    if (!raw.productor_id || !raw.codigo_lote || !raw.variedad || !raw.fecha_cosecha || !raw.peso_kg || !raw.proceso || !raw.origen_geo || !raw.estado) {
+      throw new Error('Completa todos los campos obligatorios.');
+    }
 
     let parsedJson;
     try {
-      parsedJson = parseOptionalJson(datos_trazabilidad);
+      parsedJson = parseOptionalJson(raw.datos_trazabilidad);
     } catch {
-      window.alert('El campo de datos de trazabilidad debe ser JSON válido.');
-      return null;
+      throw new Error('El campo de datos de trazabilidad debe ser JSON válido.');
     }
 
     return {
-      productor_id,
-      codigo_lote,
-      variedad,
-      fecha_cosecha,
-      peso_kg: Number(peso_kg),
-      proceso,
-      origen_geo,
-      estado,
-      id_trazabilidad_externa,
+      productor_id: raw.productor_id,
+      codigo_lote: raw.codigo_lote,
+      variedad: raw.variedad,
+      fecha_cosecha: raw.fecha_cosecha,
+      peso_kg: Number(raw.peso_kg),
+      proceso: raw.proceso,
+      origen_geo: raw.origen_geo,
+      estado: raw.estado,
+      id_trazabilidad_externa: raw.id_trazabilidad_externa || '',
       datos_trazabilidad: parsedJson,
-      tx_hash: tx_hash || null,
+      tx_hash: raw.tx_hash || null,
     };
   }
+
+  loteForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!canManage()) return;
+
+    clearFormError();
+
+    let payload;
+    try {
+      payload = readFormPayload();
+    } catch (error) {
+      showFormError(error instanceof Error ? error.message : 'Datos inválidos.');
+      return;
+    }
+
+    const isEdit = formMode === 'edit';
+    const id = editingId;
+
+    openConfirmModal({
+      title: isEdit ? 'Confirmar edición' : 'Confirmar creación',
+      message: isEdit
+        ? `¿Deseas guardar los cambios del lote ${payload.codigo_lote}?`
+        : `¿Deseas registrar el lote ${payload.codigo_lote}?`,
+      confirmLabel: isEdit ? 'Guardar cambios' : 'Crear lote',
+      onConfirm: async () => {
+        try {
+          if (isEdit && id) {
+            await updateLote(id, payload);
+          } else {
+            await createLote(payload);
+          }
+          closeLoteFormModal();
+          await loadLotes();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'No fue posible guardar el lote.';
+          openLoteFormModal(formMode, isEdit ? { ...payload, id } : payload);
+          showFormError(message);
+        }
+      },
+    });
+  });
 
   async function loadLotes() {
     setStatus('Cargando lotes desde la base de datos...');
@@ -306,55 +594,41 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
   }
 
-  async function handleCreate() {
+  function handleCreate() {
     if (!canManage()) return;
-
-    const payload = promptForLote();
-    if (!payload) return;
-
-    try {
-      await createLote(payload);
-      await loadLotes();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible crear el lote.';
-      window.alert(message);
-    }
+    openLoteFormModal('create', null);
   }
 
-  async function handleEdit(id) {
+  function handleEdit(id) {
     if (!canManage()) return;
 
     const existing = lotesState.items.find((item) => item.id === id);
     if (!existing) return;
 
-    const payload = promptForLote(existing);
-    if (!payload) return;
-
-    try {
-      await updateLote(id, payload);
-      await loadLotes();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible editar el lote.';
-      window.alert(message);
-    }
+    openLoteFormModal('edit', existing);
   }
 
-  async function handleDelete(id) {
+  function handleDelete(id) {
     if (!canManage()) return;
 
     const existing = lotesState.items.find((item) => item.id === id);
     if (!existing) return;
 
-    const confirmed = window.confirm(`¿Eliminar el lote ${existing.codigo_lote}?`);
-    if (!confirmed) return;
-
-    try {
-      await deleteLote(id);
-      await loadLotes();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No fue posible eliminar el lote.';
-      window.alert(message);
-    }
+    openConfirmModal({
+      title: 'Eliminar lote',
+      message: `¿Estás seguro de eliminar el lote ${existing.codigo_lote}? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await deleteLote(id);
+          await loadLotes();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'No fue posible eliminar el lote.';
+          window.alert(message);
+        }
+      },
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -393,6 +667,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (action === 'delete') {
         void handleDelete(id);
       }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!confirmOverlay.hidden) closeConfirmModal();
+      else if (!loteFormOverlay.hidden) closeLoteFormModal();
     });
 
     await loadLotes();

@@ -85,6 +85,7 @@ export interface MarketItem {
 	accent: string;
 	stock: number;
 	subastaId?: string;
+	bodegaId?: string;
 	estado: EstadoProducto;
 }
 

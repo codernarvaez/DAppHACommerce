@@ -21,9 +21,13 @@ const paymentMethods = [
   { id: 'paypal', name: 'PayPal', description: 'Pago rápido y seguro con PayPal', icon: '🅿️', fee: '3.5%', available: true },
 ];
 
+// Read product data from query params (passed from PurchasePanel)
+const productName = Astro.url.searchParams.get('nombre') || 'Café Origen';
+const productPrice = parseFloat(Astro.url.searchParams.get('precio') || '0');
+const productVolume = parseFloat(Astro.url.searchParams.get('volumen') || '1');
+
 const cartItems = [
-  { id: '1', name: 'Café Origen', quantity: 2, price: 25.00, image: '' },
-  { id: '2', name: 'Filtro V60', quantity: 1, price: 15.00, image: '' }
+  { id: '1', name: productName, quantity: 1, price: productPrice > 0 ? productPrice : 25.00, image: '' },
 ];
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -48,8 +52,7 @@ const checkoutSteps = [
         <OrderSummary 
           items={cartItems} 
           subtotal={subtotal}
-          taxRate={0.21}
-          discount={{ code: 'ORIGIN_24', amount: 10 }}
+          taxRate={0.15}
         />
       </aside>
     </div>
