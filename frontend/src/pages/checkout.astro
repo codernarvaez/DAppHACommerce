@@ -29,6 +29,7 @@ const productEstado = Astro.url.searchParams.get('estado') || '';
 const productEudr = Astro.url.searchParams.get('eudr') === '1';
 const productPrimas = parseFloat(Astro.url.searchParams.get('primas') || '0');
 const productPeso = parseFloat(Astro.url.searchParams.get('peso') || '0');
+const productBodegaId = Astro.url.searchParams.get('bodegaId') || '';
 
 const cartItems = [
   {
@@ -44,8 +45,13 @@ const cartItems = [
 ];
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+// Build the "detail" breadcrumb URL preserving bodegaId for back-navigation
+const detailUrl = productBodegaId
+  ? `/product-detail?bodegaId=${productBodegaId}`
+  : '/product-detail';
+
 const checkoutSteps = [
-  { label: m.checkoutSteps.detail, url: '/product-detail' },
+  { label: m.checkoutSteps.detail, url: detailUrl },
   { label: m.checkoutSteps.pay, url: '/checkout' },
 ];
 ---
@@ -70,6 +76,30 @@ const checkoutSteps = [
       </aside>
     </div>
   </main>
+</Layout>
+
+<script>
+  // Save checkout params to sessionStorage so data survives refresh
+  // and back-navigation from product-detail.
+  const PARAMS_KEY = 'checkout_params';
+
+  (function persistCheckoutParams() {
+    const currentParams = window.location.search;
+
+    if (currentParams && currentParams.length > 1) {
+      try {
+        sessionStorage.setItem(PARAMS_KEY, currentParams);
+      } catch (e) {}
+    } else {
+      try {
+        const saved = sessionStorage.getItem(PARAMS_KEY);
+        if (saved && saved.length > 1 && !window.location.search) {
+          window.location.replace('/checkout' + saved);
+        }
+      } catch (e) {}
+    }
+  })();
+</script>
 
 <style>
   main {

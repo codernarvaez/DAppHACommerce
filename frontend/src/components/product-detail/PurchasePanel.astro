@@ -18,9 +18,10 @@ interface Props {
   primas?: number;
   estado?: string;
   productName?: string;
+  bodegaId?: string;
 }
 
-const { price, stock, weight, eudrApproved = false, primas = 0, estado = '', productName = 'Café' } = Astro.props;
+const { price, stock, weight, eudrApproved = false, primas = 0, estado = '', productName = 'Café', bodegaId = '' } = Astro.props;
 
 const ESTADO_LABELS: Record<string, string> = {
   'EN_TRILLA': 'En Trilla',
@@ -42,6 +43,7 @@ const checkoutParams = new URLSearchParams({
   eudr: eudrApproved ? '1' : '0',
   primas: String(primas),
   peso: (weight || stock).replace(' kg', ''),
+  bodegaId: bodegaId,
 });
 const checkoutUrl = `/checkout?${checkoutParams.toString()}`;
 ---
