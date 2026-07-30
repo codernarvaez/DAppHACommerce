@@ -10,8 +10,8 @@ import {
     readConsent 
 } from '../lib/i18n';
 
-import { fetchBodega, fetchCompras, fetchCompraPorMuestra } from '../lib/api/geoguard';
-import type { BodegaItem, CompraItem } from '../lib/api/geoguard';
+import { fetchPublicCatalogo } from '../lib/api/geoguard';
+import type { CatalogoItem } from '../lib/api/geoguard';
 
 const consent = readConsent(Astro.cookies);
 const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
@@ -25,59 +25,22 @@ let description = '';
 let price = '$0.00';
 let stock = '0 kg';
 let weight = '0 kg';
-let eudrApproved = false;
+let eudrApproved = true;
 let primas = 0;
-let estado = 'DESCONOCIDO';
-let muestraDetail: CompraItem | null = null;
-let bodegaItem: BodegaItem | null = null;
-
-const ESTADO_LABELS: Record<string, string> = {
-	'RECEPCION': 'Recepción',
-	'EN_TRILLA': 'En Trilla',
-	'EN_SECADO': 'En Secado',
-	'EN_BODEGA': 'En Bodega',
-	'TOSTADO': 'Tostado',
-	'MOLIDO': 'Molido',
-	'DESPACHADO': 'Despachado',
-};
+let estado = 'EN_BODEGA';
+let catalogoItem: CatalogoItem | null = null;
 
 if (bodegaId) {
 	try {
-		const geoguardToken = Astro.cookies.get('geoguard_token')?.value;
-		const [bodegaItems, compraItems] = await Promise.all([
-			fetchBodega(geoguardToken),
-			fetchCompras(geoguardToken)
-		]);
+		const catalogoItems = await fetchPublicCatalogo();
+		catalogoItem = catalogoItems.find((item) => item.id === bodegaId) || null;
 
-		bodegaItem = bodegaItems.find((b) => b.id === bodegaId) || null;
-
-		if (bodegaItem) {
-			const compra = compraItems.find((c) => c.id === bodegaItem!.ordenCompraId);
-			const estadoLabel = ESTADO_LABELS[bodegaItem.estado] || bodegaItem.estado;
-			estado = bodegaItem.estado;
-
-			title = `Café ${estadoLabel} — Lote ${bodegaItem.id.slice(0, 6).toUpperCase()}`;
-			stock = `${bodegaItem.pesoIngresoKg} kg`;
-
-			if (compra) {
-				price = `$${Number(compra.precioAcordado).toFixed(2)}`;
-				weight = `${compra.volumenKg} kg`;
-				eudrApproved = compra.aprobadoEUDR;
-				primas = compra.primas;
-
-				// Fetch muestra detail
-				if (compra.muestraId) {
-					try {
-						muestraDetail = await fetchCompraPorMuestra(compra.muestraId, geoguardToken);
-					} catch (e) {
-						console.error('Error fetching muestra detail:', e);
-					}
-				}
-
-				description = `Precio acordado: $${compra.precioAcordado} · Volumen: ${compra.volumenKg} kg · Primas: $${compra.primas} · EUDR: ${compra.aprobadoEUDR ? '✓ Aprobado' : '✗ Pendiente'} · Estado compra: ${compra.estado}`;
-			} else {
-				description = `Peso ingreso: ${bodegaItem.pesoIngresoKg} kg · Estado: ${estadoLabel}`;
-			}
+		if (catalogoItem) {
+			title = `Café ${catalogoItem.tipoCafe} — Lote ${catalogoItem.codigoLote}`;
+			price = `$${Number(catalogoItem.precioReferencial).toFixed(2)}`;
+			stock = `${catalogoItem.pesoDisponibleKg} kg`;
+			weight = `${catalogoItem.pesoTotalKg} kg`;
+			description = `Lote de café de variedad ${catalogoItem.tipoCafe} procesado mediante el método ${catalogoItem.proceso}. Peso total del lote: ${catalogoItem.pesoTotalKg} kg · Volumen disponible: ${catalogoItem.pesoDisponibleKg} kg.`;
 		}
 	} catch (err) {
 		console.error('Error loading product detail:', err);
@@ -98,40 +61,38 @@ const checkoutSteps = [
     <div class="main-grid">
       <section class="info-section">
         <div class="badge-row">
-          <span class={`estado-badge estado-${estado}`}>{ESTADO_LABELS[estado] || estado}</span>
+          <span class="estado-badge estado-EN_BODEGA">En Bodega</span>
           {eudrApproved && <span class="badge-origin">✓ EUDR Aprobado</span>}
         </div>
         <h1 class="product-title">{title}</h1>
         
-        {muestraDetail && (
+        {catalogoItem && (
           <div class="muestra-detail">
-            <h3>Detalle de la Muestra</h3>
+            <h3>Detalle del Lote</h3>
             <div class="muestra-grid">
               <div class="muestra-field">
-                <span class="muestra-label">ID Muestra</span>
-                <strong>{muestraDetail.muestraId.slice(0, 8)}...</strong>
+                <span class="muestra-label">Código de Lote</span>
+                <strong>{catalogoItem.codigoLote}</strong>
               </div>
               <div class="muestra-field">
-                <span class="muestra-label">Precio Acordado</span>
-                <strong>${Number(muestraDetail.precioAcordado).toFixed(2)}</strong>
+                <span class="muestra-label">Proceso</span>
+                <strong>{catalogoItem.proceso}</strong>
               </div>
               <div class="muestra-field">
-                <span class="muestra-label">Volumen</span>
-                <strong>{muestraDetail.volumenKg} kg</strong>
+                <span class="muestra-label">Tipo de Café</span>
+                <strong>{catalogoItem.tipoCafe}</strong>
               </div>
               <div class="muestra-field">
-                <span class="muestra-label">Primas</span>
-                <strong>${Number(muestraDetail.primas).toFixed(2)}</strong>
+                <span class="muestra-label">Peso Disponible</span>
+                <strong>{catalogoItem.pesoDisponibleKg} kg</strong>
               </div>
               <div class="muestra-field">
-                <span class="muestra-label">EUDR</span>
-                <strong class={muestraDetail.aprobadoEUDR ? 'eudr-approved' : 'eudr-pending'}>
-                  {muestraDetail.aprobadoEUDR ? '✓ Aprobado' : '✗ Pendiente'}
-                </strong>
+                <span class="muestra-label">Peso Total</span>
+                <strong>{catalogoItem.pesoTotalKg} kg</strong>
               </div>
               <div class="muestra-field">
-                <span class="muestra-label">Estado</span>
-                <strong>{muestraDetail.estado}</strong>
+                <span class="muestra-label">Puntaje SCA</span>
+                <strong>{catalogoItem.puntajeSca || 'N/A'}</strong>
               </div>
             </div>
           </div>

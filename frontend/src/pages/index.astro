@@ -33,50 +33,30 @@ const locale = resolveLocale(Astro.cookies, Astro.url, Astro.request, consent);
 const { m, pm } = getI18n(locale);
 const catalog = await getCatalogData(locale);
 
-// Fetch real data from GeoGuard Acopio API ===
-import { fetchBodega, fetchCompras } from '../lib/api/geoguard';
+// Fetch real data from GeoGuard Catalogo API ===
+import { fetchPublicCatalogo } from '../lib/api/geoguard';
 import type { MarketItem } from '../lib/types';
 
 const ACCENTS = ['from-ruby-500', 'from-slate-700', 'from-amber-900', 'from-emerald-950'] as const;
 
-const ESTADO_LABELS: Record<string, string> = {
-	'RECEPCION': 'Recepción',
-	'EN_TRILLA': 'En Trilla',
-	'EN_SECADO': 'En Secado',
-	'EN_BODEGA': 'En Bodega',
-	'TOSTADO': 'Tostado',
-	'MOLIDO': 'Molido',
-	'DESPACHADO': 'Despachado',
-};
-
 try {
-	const geoguardToken = Astro.cookies.get('geoguard_token')?.value;
-	const [bodegaItems, compraItems] = await Promise.all([
-		fetchBodega(geoguardToken),
-		fetchCompras(geoguardToken)
-	]);
+	const catalogoItems = await fetchPublicCatalogo();
 
-	const compraById = new Map(compraItems.map((c) => [c.id, c]));
-
-	const acopioItems: MarketItem[] = bodegaItems.map((bodega, index) => {
-		const compra = compraById.get(bodega.ordenCompraId);
-		const estadoLabel = ESTADO_LABELS[bodega.estado] || bodega.estado;
-		const precio = compra?.precioAcordado ?? 0;
-
+	const acopioItems: MarketItem[] = catalogoItems.map((item, index) => {
 		return {
-			id: bodega.id,
-			title: `Café ${estadoLabel} — Lote ${bodega.id.slice(0, 6).toUpperCase()}`,
-			description: `Peso ingreso: ${bodega.pesoIngresoKg} kg · Estado: ${estadoLabel}${compra ? ` · Volumen compra: ${compra.volumenKg} kg` : ''}`,
-			price: `$${Number(precio).toFixed(2)}`,
+			id: item.id,
+			title: `${item.esEspecialidad ? 'Café Especial' : 'Café'} ${item.tipoCafe} — Lote ${item.codigoLote}`,
+			description: `Peso disponible: ${item.pesoDisponibleKg} kg · Proceso: ${item.proceso}${item.puntajeSca ? ` · Puntaje SCA: ${item.puntajeSca}` : ''}`,
+			price: `$${Number(item.precioReferencial).toFixed(2)}`,
 			priceLabel: m.market?.priceLabel || 'Precio',
-			stock: bodega.pesoIngresoKg,
+			stock: item.pesoDisponibleKg,
 			origin: 'Loja, Ecuador',
-			label: estadoLabel,
+			label: item.proceso,
 			accent: ACCENTS[index % ACCENTS.length],
 			subastaId: undefined,
-			bodegaId: bodega.id,
+			bodegaId: item.id,
 			estado: 'publicado',
-			estadoKey: bodega.estado,
+			estadoKey: item.proceso,
 		};
 	});
 
@@ -86,21 +66,19 @@ try {
 	// Actualizar contadores con los datos reales
 	catalog.stats.productCount = acopioItems.length;
 } catch (err) {
-	console.error('Error fetching GeoGuard acopio data:', err);
+	console.error('Error fetching GeoGuard catalog data:', err);
 	catalog.items = [];
 	const errMsg = err instanceof Error ? err.message : '';
-	catalog.error = (errMsg.includes('No autorizado') || errMsg.includes('Acceso denegado'))
-		? 'Debes iniciar sesión para acceder al catálogo de productos.'
-		: (errMsg || 'Error al cargar datos de acopio');
+	catalog.error = errMsg || 'Error al cargar datos del catálogo público';
 	catalog.apiOnline = true;
 	catalog.stats.productCount = 0;
 }
 
-// Collect unique estados for filter chips
+// Collect unique procesos for filter chips
 const estadoKeys = [...new Set(catalog.items.filter(i => i.estadoKey).map(i => i.estadoKey))];
 const estadoFilters = estadoKeys.map(key => ({
 	key,
-	label: ESTADO_LABELS[key] || key,
+	label: key,
 }));
 const labelAll = m.filters.typeAll.replace(/^[^:]*:\s*/, '');
 ---
