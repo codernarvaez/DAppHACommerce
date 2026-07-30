@@ -87,6 +87,7 @@ if (bodegaId) {
 
 const checkoutSteps = [
   { label: m.checkoutSteps.detail, url: `/product-detail?bodegaId=${bodegaId || ''}` },
+  { label: m.checkoutSteps.pay, url: `/checkout` },
 ];
 ---
 
@@ -148,6 +149,7 @@ const checkoutSteps = [
           primas={primas}
           estado={estado}
           productName={title}
+          bodegaId={bodegaId}
         />
       </aside>
     </div>
