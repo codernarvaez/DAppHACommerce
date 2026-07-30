@@ -247,7 +247,10 @@ const { methods, selectedMethod = 'card', stripePublicKey = '', total = 0 } = As
             },
         };
 
-        cardElement = elements.create('card', { style });
+        cardElement = elements.create('card', { 
+            style,
+            disableLink: true 
+        });
         cardElement.mount('#card-element');
 
         cardElement.on('change', (event: any) => {
@@ -409,7 +412,7 @@ const { methods, selectedMethod = 'card', stripePublicKey = '', total = 0 } = As
         modalCloseBtn.addEventListener('click', () => {
             modal?.classList.remove('active');
             if (isSuccessRedirect) {
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             }
         });
     }
