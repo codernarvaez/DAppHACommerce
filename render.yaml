@@ -1,11 +1,9 @@
-
-Render · YAML
 services:
   # ---------- Backend: FastAPI (Uvicorn) ----------
   - type: web
     name: dapphacommerce-backend
     runtime: python
-    rootDir: backend     
+    rootDir: backend
     plan: free
     buildCommand: pip install -r requirements.txt && prisma generate
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
@@ -26,15 +24,15 @@ services:
   - type: web
     name: dapphacommerce-frontend
     runtime: node
-    rootDir: frontend         
+    rootDir: frontend
     plan: free
     buildCommand: npm install && npm run build
     startCommand: node ./dist/server/entry.mjs
     envVars:
       - key: PUBLIC_API_BASE_URL
-        sync: false           
+        sync: false
       - key: API_BASE_URL
-        sync: false   
+        sync: false
       - key: PUBLIC_SUPABASE_URL
         sync: false
       - key: PUBLIC_SUPABASE_KEY
