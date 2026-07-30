@@ -40,6 +40,7 @@ import type { MarketItem } from '../lib/types';
 const ACCENTS = ['from-ruby-500', 'from-slate-700', 'from-amber-900', 'from-emerald-950'] as const;
 
 const ESTADO_LABELS: Record<string, string> = {
+	'RECEPCION': 'Recepción',
 	'EN_TRILLA': 'En Trilla',
 	'EN_SECADO': 'En Secado',
 	'EN_BODEGA': 'En Bodega',
@@ -75,21 +76,33 @@ try {
 			subastaId: undefined,
 			bodegaId: bodega.id,
 			estado: 'publicado',
+			estadoKey: bodega.estado,
 		};
 	});
 
 	catalog.items = acopioItems;
 	catalog.error = undefined;
 	catalog.apiOnline = true;
+	// Actualizar contadores con los datos reales
+	catalog.stats.productCount = acopioItems.length;
 } catch (err) {
 	console.error('Error fetching GeoGuard acopio data:', err);
 	catalog.items = [];
-	catalog.error = err instanceof Error ? err.message : 'Error al cargar datos de acopio';
+	const errMsg = err instanceof Error ? err.message : '';
+	catalog.error = (errMsg.includes('No autorizado') || errMsg.includes('Acceso denegado'))
+		? 'Debes iniciar sesión para acceder al catálogo de productos.'
+		: (errMsg || 'Error al cargar datos de acopio');
 	catalog.apiOnline = true;
+	catalog.stats.productCount = 0;
 }
 
-
-const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters.process];
+// Collect unique estados for filter chips
+const estadoKeys = [...new Set(catalog.items.filter(i => i.estadoKey).map(i => i.estadoKey))];
+const estadoFilters = estadoKeys.map(key => ({
+	key,
+	label: ESTADO_LABELS[key] || key,
+}));
+const labelAll = m.filters.typeAll.replace(/^[^:]*:\s*/, '');
 ---
 
 <Layout
@@ -120,16 +133,17 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			</div>
 		</section>
 
+		{estadoKeys.length > 0 && (
 		<section class="filters" aria-label={m.filters.aria}>
-			<button class="filters-toggle" type="button">{m.filters.toggle}</button>
-			<div class="chips">
-				{filters.map((filter) => <span class="chip">{filter}</span>)}
-			</div>
-			<div class="view-icons" aria-hidden="true">
-				<span>▦</span>
-				<span>☰</span>
+			<span class="filters-label">{m.filters.toggle}</span>
+			<div class="chips" id="estado-chips">
+				<button class="chip chip-active" data-estado="">{labelAll}</button>
+				{estadoFilters.map(ef => (
+					<button class="chip" data-estado={ef.key}>{ef.label}</button>
+				))}
 			</div>
 		</section>
+		)}
 
 		<MarketGrid
 			items={catalog.items}
@@ -168,6 +182,25 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 	</main>
 
 	<script>
+		// ── Filtro por estado del producto ──
+		const estadoChips = document.querySelectorAll('#estado-chips .chip');
+		const productCards = document.querySelectorAll('#market .card');
+
+		estadoChips.forEach(chip => {
+			chip.addEventListener('click', () => {
+				const estado = chip.dataset.estado;
+
+				// Resaltar chip activo
+				estadoChips.forEach(c => c.classList.remove('chip-active'));
+				chip.classList.add('chip-active');
+
+				// Mostrar/ocultar tarjetas
+				productCards.forEach(card => {
+					card.style.display = (!estado || card.dataset.estado === estado) ? '' : 'none';
+				});
+			});
+		});
+
 		document.getElementById('footer-cookie-settings')?.addEventListener('click', () => {
 			document.dispatchEvent(new CustomEvent('origin:open-cookie-settings'));
 		});
@@ -224,8 +257,7 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 		}
 
 		.menu,
-		.icon-badge,
-		.filters-toggle {
+		.icon-badge {
 			display: grid;
 			place-items: center;
 		}
@@ -453,15 +485,15 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 
 		.filters {
 			align-items: center;
-			justify-content: space-between;
 			gap: 16px;
 			padding: 18px 18px;
 			margin-top: 18px;
 			background: rgba(255, 255, 255, 0.64);
 			border: 1px solid rgba(18, 18, 18, 0.06);
+			flex-wrap: wrap;
 		}
 
-		.filters-toggle,
+		.filters-label,
 		.chip {
 			border-radius: 10px;
 			font-weight: 700;
@@ -470,11 +502,11 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			text-transform: uppercase;
 		}
 
-		.filters-toggle {
-			border: 0;
-			background: #111;
-			color: white;
-			padding: 12px 14px;
+		.filters-label {
+			color: rgba(18, 18, 18, 0.4);
+			padding: 6px 4px;
+			white-space: nowrap;
+			user-select: none;
 		}
 
 		.chips {
@@ -486,13 +518,18 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			padding: 10px 14px;
 			background: rgba(18, 18, 18, 0.06);
 			color: rgba(18, 18, 18, 0.72);
+			border: 0;
+			cursor: pointer;
+			transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 		}
-
-		.view-icons {
-			display: flex;
-			gap: 14px;
-			color: rgba(18, 18, 18, 0.7);
-			font-size: 1rem;
+		.chip:hover {
+			background: rgba(18, 18, 18, 0.12);
+		}
+		.chip-active,
+		.chip-active:hover {
+			background: #111;
+			color: #fff;
+			box-shadow: 0 2px 8px rgba(18, 18, 18, 0.2);
 		}
 
 		.footer {
@@ -584,10 +621,6 @@ const filters = [m.filters.typeAll, m.filters.origin, m.filters.score, m.filters
 			.filters {
 				align-items: flex-start;
 				flex-direction: column;
-			}
-
-			.view-icons {
-				align-self: flex-end;
 			}
 
 			.footer {

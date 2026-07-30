@@ -17,12 +17,25 @@ interface Props {
     name: string;
     quantity: number;
     price: number;
-    image?: string;
+    estado?: string;
+    eudrApproved?: boolean;
+    primas?: number;
+    peso?: number;
     }>;
     subtotal: number;
     taxRate?: number; // 0.15
     discount?: { code: string; amount: number };
 }
+
+const ESTADO_LABELS: Record<string, string> = {
+  'RECEPCION': 'Recepción',
+  'EN_TRILLA': 'En Trilla',
+  'EN_SECADO': 'En Secado',
+  'EN_BODEGA': 'En Bodega',
+  'TOSTADO': 'Tostado',
+  'MOLIDO': 'Molido',
+  'DESPACHADO': 'Despachado',
+};
 
 const {
     items = [],
@@ -45,29 +58,36 @@ const total = subtotal + tax - discountAmount;
         <ul class="order-summary__items">
             {items.map((item) => (
                 <li class="order-item">
-                    <div class="order-item__image">
-                        {item.image ? (
-                            <img 
-                                src={item.image} 
-                                alt={item.name} 
-                                class="order-item__img"
-                                loading="lazy"
-                            />
-                            ) : (
-                            <div class="order-item__placeholder">
-                                <span class="material-symbols-outlined">inventory_2</span>
-                            </div>
-                        )}
-                    </div>
                     <div class="order-item__details">
                         <p class="order-item__name">{item.name}</p>
-                        <p class="order-item__qty">
-                            {m.checkout.orderSummary.itemQty.replace(
-                                '{qty}',
-                                String(item.quantity)
+                        <div class="order-item__meta-grid">
+                            {item.estado && (
+                                <span class="order-item__meta">
+                                    <span class="meta-label">{m.checkout.orderSummary.estado}</span>
+                                    <span class={`estado-chip estado-${item.estado}`}>
+                                        {ESTADO_LABELS[item.estado] || item.estado}
+                                    </span>
+                                </span>
                             )}
-                        </p>
-                        <p class="order-item__price">${item.price.toFixed(2)}</p>
+                            {item.peso && item.peso > 0 && (
+                                <span class="order-item__meta">
+                                    <span class="meta-label">{m.checkout.orderSummary.peso}</span>
+                                    <span>{item.peso} kg</span>
+                                </span>
+                            )}
+                            {item.primas && item.primas > 0 && (
+                                <span class="order-item__meta">
+                                    <span class="meta-label">{m.checkout.orderSummary.primas}</span>
+                                    <span>+ ${item.primas.toFixed(2)}</span>
+                                </span>
+                            )}
+                            {item.eudrApproved && (
+                                <span class="order-item__meta order-item__meta--eudr">
+                                    <span class="meta-label">{m.checkout.orderSummary.eudr}</span>
+                                    <span class="eudr-badge">✓ {m.checkout.orderSummary.eudrApproved}</span>
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </li>
             ))}

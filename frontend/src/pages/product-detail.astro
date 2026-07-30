@@ -32,6 +32,7 @@ let muestraDetail: CompraItem | null = null;
 let bodegaItem: BodegaItem | null = null;
 
 const ESTADO_LABELS: Record<string, string> = {
+	'RECEPCION': 'Recepción',
 	'EN_TRILLA': 'En Trilla',
 	'EN_SECADO': 'En Secado',
 	'EN_BODEGA': 'En Bodega',
@@ -95,9 +96,11 @@ const checkoutSteps = [
 
     <div class="main-grid">
       <section class="info-section">
-        {eudrApproved && <div class="badge-origin">✓ EUDR Aprobado</div>}
+        <div class="badge-row">
+          <span class={`estado-badge estado-${estado}`}>{ESTADO_LABELS[estado] || estado}</span>
+          {eudrApproved && <span class="badge-origin">✓ EUDR Aprobado</span>}
+        </div>
         <h1 class="product-title">{title}</h1>
-        <p class="product-description">{description}</p>
         
         {muestraDetail && (
           <div class="muestra-detail">
@@ -173,6 +176,12 @@ const checkoutSteps = [
     gap: 40px;
     align-items: start;
   }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
   .badge-origin {
     display: inline-block;
     background: #e6f4ea;
@@ -182,8 +191,24 @@ const checkoutSteps = [
     padding: 6px 12px;
     border-radius: 20px;
     text-transform: uppercase;
-    margin-bottom: 12px;
   }
+  .estado-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #6b7280;
+  }
+  .estado-badge.estado-RECEPCION  { background: #475569; }
+  .estado-badge.estado-EN_SECADO  { background: #d97706; }
+  .estado-badge.estado-EN_TRILLA  { background: #ea580c; }
+  .estado-badge.estado-EN_BODEGA  { background: #16a34a; }
+  .estado-badge.estado-TOSTADO    { background: #92400e; }
+  .estado-badge.estado-MOLIDO     { background: #9333ea; }
+  .estado-badge.estado-DESPACHADO { background: #0d9488; }
   .product-title {
     font-size: 2.5rem;
     font-weight: 800;
@@ -191,13 +216,6 @@ const checkoutSteps = [
     line-height: 1.1;
     margin-bottom: 8px;
   }
-  .product-description {
-    font-size: 1.1rem;
-    color: #4b5563;
-    margin-bottom: 24px;
-    max-width: 600px;
-  }
-
   .muestra-detail {
     background: #ffffff;
     border: 1px solid #e5e7eb;
