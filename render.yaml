@@ -41,3 +41,9 @@ services:
         sync: false
       - key: PUBLIC_STRIPE_KEY
         sync: false
+      - key: HOST
+        value: "0.0.0.0" # necesario para que el adaptador Node de Astro escuche en todas las interfaces (health check de Render)
+      - key: PORT
+        value: "10000" # tuvo que agregarse manualmente; el puerto free-tier por defecto de Render
+      - key: NODE_VERSION
+        value: "24.14.0"
