@@ -25,9 +25,22 @@ const paymentMethods = [
 const productName = Astro.url.searchParams.get('nombre') || 'Café Origen';
 const productPrice = parseFloat(Astro.url.searchParams.get('precio') || '0');
 const productVolume = parseFloat(Astro.url.searchParams.get('volumen') || '1');
+const productEstado = Astro.url.searchParams.get('estado') || '';
+const productEudr = Astro.url.searchParams.get('eudr') === '1';
+const productPrimas = parseFloat(Astro.url.searchParams.get('primas') || '0');
+const productPeso = parseFloat(Astro.url.searchParams.get('peso') || '0');
 
 const cartItems = [
-  { id: '1', name: productName, quantity: 1, price: productPrice > 0 ? productPrice : 25.00, image: '' },
+  {
+    id: '1',
+    name: productName,
+    quantity: 1,
+    price: productPrice > 0 ? productPrice : 25.00,
+    estado: productEstado,
+    eudrApproved: productEudr,
+    primas: productPrimas,
+    peso: productPeso > 0 ? productPeso : productVolume,
+  },
 ];
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 

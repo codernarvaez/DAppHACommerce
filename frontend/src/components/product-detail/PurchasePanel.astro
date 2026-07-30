@@ -38,6 +38,10 @@ const checkoutParams = new URLSearchParams({
   nombre: productName,
   precio: price.replace('$', ''),
   volumen: stock.replace(' kg', ''),
+  estado: estado,
+  eudr: eudrApproved ? '1' : '0',
+  primas: String(primas),
+  peso: (weight || stock).replace(' kg', ''),
 });
 const checkoutUrl = `/checkout?${checkoutParams.toString()}`;
 ---

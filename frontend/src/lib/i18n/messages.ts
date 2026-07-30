@@ -150,6 +150,11 @@ export const es = {
 			discount: 'Descuento ({code})',
 			total: 'TOTAL',
 			itemQty: 'QTY: {qty}',
+			estado: 'Estado',
+			peso: 'Peso',
+			primas: 'Primas',
+			eudr: 'EUDR',
+			eudrApproved: 'Aprobado',
 		},
 		buttons: {
 			confirmPay: 'CONFIRMAR Y PAGAR',
@@ -316,7 +321,12 @@ export const en: typeof es = {
 			tax: 'Taxes (VAT {rate}%)',
 			discount: 'Discount ({code})',
 			total: 'TOTAL',
-			itemQty: 'QTY: {qty}'
+			itemQty: 'QTY: {qty}',
+			estado: 'State',
+			peso: 'Weight',
+			primas: 'Premiums',
+			eudr: 'EUDR',
+			eudrApproved: 'Approved',
 		},
 		buttons: {
 			confirmPay: 'CONFIRM AND PAY',
@@ -480,7 +490,12 @@ export const zh: typeof es = {
 			tax: '税费（增值税 {rate}%）',
 			discount: '折扣（{code}）',
 			total: '总计',
-			itemQty: '数量：{qty}'
+			itemQty: '数量：{qty}',
+			estado: '状态',
+			peso: '重量',
+			primas: '溢价',
+			eudr: 'EUDR',
+			eudrApproved: '已批准',
 		},
 		buttons: {
 			confirmPay: '确认并支付',
@@ -649,7 +664,12 @@ export const fr: typeof es = {
 			tax: 'Taxes (TVA {rate}%)',
 			discount: 'Réduction ({code})',
 			total: 'TOTAL',
-			itemQty: 'QTÉ : {qty}'
+			itemQty: 'QTÉ : {qty}',
+			estado: 'État',
+			peso: 'Poids',
+			primas: 'Primes',
+			eudr: 'EUDR',
+			eudrApproved: 'Approuvé',
 		},
 		buttons: {
 			confirmPay: 'CONFIRMER ET PAYER',
@@ -822,6 +842,11 @@ export const ru: typeof es = {
 			discount: 'Скидка ({code})',
 			total: 'ИТОГО',
 			itemQty: 'КОЛ-ВО: {qty}',
+			estado: 'Состояние',
+			peso: 'Вес',
+			primas: 'Премии',
+			eudr: 'EUDR',
+			eudrApproved: 'Одобрено',
 		},
 		buttons: {
 			confirmPay: 'ПОДТВЕРДИТЬ И ОПЛАТИТЬ',

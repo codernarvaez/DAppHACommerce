@@ -31,7 +31,7 @@ const { items, error, apiOnline, m } = Astro.props;
 	)}
 
 	{items.map((product) => (
-		<article class="card" id={`product-${product.id}`}>
+		<article class="card" id={`product-${product.id}`} data-estado={product.estadoKey || ''}>
 			<div class={`card-art ${product.accent}`}>
 				<span class={`card-label ${product.estadoKey ? `estado-${product.estadoKey}` : ''}`}>{product.label}</span>
 				<div class="art-shadow"></div>
@@ -57,7 +57,7 @@ const { items, error, apiOnline, m } = Astro.props;
 						href={`/product-detail?bodegaId=${product.bodegaId || product.id}`}
 						aria-label={interpolate(m.market.viewProduct, { title: product.title })}
 					>
-						↗
+						<span class="material-symbols-outlined">shopping_cart</span>
 					</a>
 				</div>
 			</div>
@@ -212,6 +212,10 @@ const { items, error, apiOnline, m } = Astro.props;
 		color: white;
 		font-size: 1rem;
 		text-decoration: none;
+	}
+
+	.mini-button .material-symbols-outlined {
+		font-size: 1.35rem;
 	}
 
 	.card-art.from-ruby-500 {

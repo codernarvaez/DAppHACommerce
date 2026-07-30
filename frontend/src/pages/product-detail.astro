@@ -101,11 +101,6 @@ const checkoutSteps = [
           {eudrApproved && <span class="badge-origin">✓ EUDR Aprobado</span>}
         </div>
         <h1 class="product-title">{title}</h1>
-        <div class="product-description">
-          {description.split('·').map((part) => (
-            <span class="detail-line">{part.trim()}</span>
-          ))}
-        </div>
         
         {muestraDetail && (
           <div class="muestra-detail">
@@ -221,18 +216,6 @@ const checkoutSteps = [
     line-height: 1.1;
     margin-bottom: 8px;
   }
-  .product-description {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 24px;
-  }
-  .product-description .detail-line {
-    font-size: 1rem;
-    color: #4b5563;
-    line-height: 1.6;
-  }
-
   .muestra-detail {
     background: #ffffff;
     border: 1px solid #e5e7eb;
