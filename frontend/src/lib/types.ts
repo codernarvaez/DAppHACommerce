@@ -87,6 +87,8 @@ export interface MarketItem {
 	subastaId?: string;
 	bodegaId?: string;
 	estado: EstadoProducto;
+	/** Código raw del estado (ej: 'EN_TRILLA', 'EN_BODEGA') para aplicar colores */
+	estadoKey?: string;
 }
 
 export interface AuctionItem {

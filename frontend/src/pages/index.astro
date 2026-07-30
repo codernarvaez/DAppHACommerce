@@ -40,6 +40,7 @@ import type { MarketItem } from '../lib/types';
 const ACCENTS = ['from-ruby-500', 'from-slate-700', 'from-amber-900', 'from-emerald-950'] as const;
 
 const ESTADO_LABELS: Record<string, string> = {
+	'RECEPCION': 'Recepción',
 	'EN_TRILLA': 'En Trilla',
 	'EN_SECADO': 'En Secado',
 	'EN_BODEGA': 'En Bodega',
@@ -75,6 +76,7 @@ try {
 			subastaId: undefined,
 			bodegaId: bodega.id,
 			estado: 'publicado',
+			estadoKey: bodega.estado,
 		};
 	});
 
