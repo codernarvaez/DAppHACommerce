@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.database import prisma
 
-from app.api import auth, lotes, productos, pos, subastas, usuarios
+from app.api import auth, lotes, productos, pos, subastas, usuarios, pagos
 
 
 @asynccontextmanager
@@ -35,6 +35,8 @@ app.include_router(pos.router)
 app.include_router(subastas.router)
 app.include_router(usuarios.router)
 app.include_router(auth.router)
+app.include_router(pagos.router)
+
 
 
 @app.get("/", tags=["Health Check"])

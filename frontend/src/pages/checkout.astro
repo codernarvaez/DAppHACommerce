@@ -30,6 +30,9 @@ const cartItems = [
   { id: '1', name: productName, quantity: 1, price: productPrice > 0 ? productPrice : 25.00, image: '' },
 ];
 const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+const taxRate = 0.15;
+const tax = subtotal * taxRate;
+const orderTotal = subtotal + tax;
 
 const checkoutSteps = [
   { label: m.checkoutSteps.detail, url: '/product-detail' },
@@ -42,17 +45,25 @@ const checkoutSteps = [
   title={m.checkout.title}
   description={m.checkout.description}
 >
+  <!-- Load Stripe.js -->
+  <script is:inline src="https://js.stripe.com/v3/"></script>
+
   <main style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
     <BreadcrumbRadio steps={checkoutSteps} currentStep={2} />
     <div style="display: grid; grid-template-columns: 1fr 350px; gap: 40px; align-items: start;">
       <section>
-        <PaymentMethods methods={paymentMethods} selectedMethod="card" />
+        <PaymentMethods 
+          methods={paymentMethods} 
+          selectedMethod="card" 
+          stripePublicKey={import.meta.env.PUBLIC_STRIPE_KEY || ''}
+          total={orderTotal}
+        />
       </section>
       <aside>
         <OrderSummary 
           items={cartItems} 
           subtotal={subtotal}
-          taxRate={0.15}
+          taxRate={taxRate}
         />
       </aside>
     </div>
