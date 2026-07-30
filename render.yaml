@@ -1,0 +1,45 @@
+
+Render · YAML
+services:
+  # ---------- Backend: FastAPI (Uvicorn) ----------
+  - type: web
+    name: dapphacommerce-backend
+    runtime: python
+    rootDir: backend     
+    plan: free
+    buildCommand: pip install -r requirements.txt && prisma generate
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+  # ---------- Frontend: Astro (SSR, adaptador Node) ----------
+  - type: web
+    name: dapphacommerce-frontend
+    runtime: node
+    rootDir: frontend         
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node ./dist/server/entry.mjs
+    envVars:
+      - key: PUBLIC_API_BASE_URL
+        sync: false           
+      - key: API_BASE_URL
+        sync: false   
+      - key: PUBLIC_SUPABASE_URL
+        sync: false
+      - key: PUBLIC_SUPABASE_KEY
+        sync: false
+      - key: GEOGUARD_TOKEN
+        sync: false
+      - key: PUBLIC_STRIPE_KEY
+        sync: false
