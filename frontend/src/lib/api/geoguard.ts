@@ -1,4 +1,4 @@
-const GEOGUARD_BASE = 'https://geoguard-exped.onrender.com';
+const GEOGUARD_BASE = 'https://geoguard-exped1.onrender.com';
 
 export interface BodegaItem {
 	id: string;
